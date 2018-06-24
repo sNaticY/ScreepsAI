@@ -16,8 +16,7 @@ export default class Parallel extends Tree {
     public Execute(): Status {
         let s = 0;
         let f = 0;
-        let tree : Tree;
-        for(tree of this.SubTrees){
+        for(var tree of this.SubTrees){
             if (tree.Execute() == Status.Succeed) {
                 s++;
             }

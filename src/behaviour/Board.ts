@@ -4,5 +4,8 @@ export default class Board {
 
     static TargetHarvesterNumber : number
     static TargetUpgraderNumber : number
+    static TargetBuilderNumber : number
+    static TargetMinerNumber : number
+    static TargetCarrierNumber : number
 
 }

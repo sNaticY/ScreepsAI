@@ -1,21 +1,44 @@
 import { ErrorMapper } from "utils/ErrorMapper";
 import { SubTrees, Board } from "behaviour/index";
 
-let tree = SubTrees.AISpawn();
+var aiBrain = SubTrees.AIBrain();
+var aiSpawn = SubTrees.AISpawn();
+var aiHarvester = SubTrees.AIHarvester();
+var aiUpgrader = SubTrees.AIUpgrader();
+var aiBuilder = SubTrees.AIBuilder();
+var aiMiner = SubTrees.AIMiner();
+var aiCarrier = SubTrees.AICarrier();
 
-Board.TargetHarvesterNumber = 3;
-Board.TargetUpgraderNumber = 3
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 export const loop = ErrorMapper.wrapLoop(() => {
-	
-	console.log(`Current game tick is ${Game.time}`);
-	
-	Board.CurrentSpawn = Game.spawns["Spawn1"];
 
-	tree.Execute();
+	Board.CurrentSpawn = Game.spawns["Spawn1"];
 	
+	aiBrain.Execute();
+	aiSpawn.Execute();
+
+	for (var name in Game.creeps) {
+		var creep = Game.creeps[name];
+		Board.CurrentCreep = creep;
+		if (creep.memory.role == 'harvester') {
+			aiHarvester.Execute();
+		}
+		else if (creep.memory.role == 'upgrader') {
+			aiUpgrader.Execute();
+		}
+		else if (creep.memory.role == 'builder') {
+			aiBuilder.Execute();
+		}
+		else if(creep.memory.role == "miner") {
+			aiMiner.Execute();
+		}
+		else if(creep.memory.role == "carrier") {
+			aiCarrier.Execute();
+		}
+	}
+
 	// Automatically delete memory of missing creeps
 	for (const name in Memory.creeps) {
 		if (!(name in Game.creeps)) {
