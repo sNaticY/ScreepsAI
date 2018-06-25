@@ -1,48 +1,37 @@
 import Board from "behaviour/Board";
-import { random } from "lodash";
+import { random, List, Dictionary } from "lodash";
 
-export class CreepConfig {
-    public static BuildWorkerLv1(role: string, spawn: StructureSpawn, name: string) : ScreepsReturnCode {
-        var result = spawn.spawnCreep([WORK, WORK, CARRY, MOVE], name, { memory: GenScreepsMemory(role, 1) });
-        return result;
-    }
+const BodyParts : Dictionary<List<BodyPartConstant[]>> = {
+    worker : [
+        [], 
+        [WORK, WORK, CARRY, MOVE],
+        [WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE],
+        [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE],
+        [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+    ],
+    miner: [
+        [],
+        [WORK, WORK, WORK, WORK, WORK, MOVE],
+        [WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE],
+        [WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE],
+        [WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE],
+    ],
+    carrier: [
+        [],
+        [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
+        [CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE],
+        [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE],
+    ]
+}
 
-    public static BuildWorkerLv2(role: string, spawn: StructureSpawn, name: string) : ScreepsReturnCode {
-        var result = spawn.spawnCreep([WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE], name, { memory: GenScreepsMemory(role, 2) });
-        return result;
-    }
-
-    public static BuildWorkerLv3(role: string, spawn: StructureSpawn, name: string): ScreepsReturnCode {
-        var result = spawn.spawnCreep([WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE], name, { memory: GenScreepsMemory(role, 3) });
-        return result;
-    }
-
-    public static BuildWorkerLv4(role: string, spawn: StructureSpawn, name: string): ScreepsReturnCode {
-        var result = spawn.spawnCreep([WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], name, { memory: GenScreepsMemory(role, 4) });
-        return result;
-    }
-
-    public static BuildMinerLv2(spawn: StructureSpawn, name: string) : ScreepsReturnCode {
-        var result = spawn.spawnCreep([WORK, WORK, WORK, WORK, WORK, MOVE], name, { memory: GenScreepsMemory("miner", 2) });
-        if(result == 0)
+export class BuildCreepHelper {
+    public static BuildCreep(role: string,level: number, spawn: StructureSpawn, name: string): ScreepsReturnCode {
+        if(role == "harvester" || role == "upgrader" || role == "builder")
         {
-            Board.MinerIndex++;
+            var result = spawn.spawnCreep(BodyParts["worker"][level], name, {memory: GenScreepsMemory(role, level)});
+            return result;
         }
-        return result;
-    }
-
-    public static BuildCarrierLv2(spawn: StructureSpawn, name: string) : ScreepsReturnCode {
-        var result = spawn.spawnCreep([CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], name, { memory: GenScreepsMemory("carrier", 2) });
-        return result;
-    }
-
-    public static BuildCarrierLv3(spawn: StructureSpawn, name: string) : ScreepsReturnCode {
-        var result = spawn.spawnCreep([CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], name, { memory: GenScreepsMemory("carrier", 3) });
-        return result;
-    }
-
-    public static BuildCarrierLv4(spawn: StructureSpawn, name: string) : ScreepsReturnCode {
-        var result = spawn.spawnCreep([CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], name, { memory: GenScreepsMemory("carrier", 4) });
+        var result = spawn.spawnCreep(BodyParts[role][level], name, {memory: GenScreepsMemory(role, level)});
         return result;
     }
 }

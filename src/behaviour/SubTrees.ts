@@ -4,6 +4,7 @@ import Sequence from "./Sequence";
 import Status from "./Status";
 
 import {
+	CheckCreepNum,
 	CompleteCreepNumber, 
 	MoveAndHarvest, 
 	MoveAndTransferBackToSpawnAndExtension, 
@@ -20,7 +21,7 @@ import {
 	AdjustStrategy,
 	ResultAction,
 	LogAction,
-	CanBuildCreep,
+	TryBuildCreep,
 } from "./Actions";
 
 import Selector from "./Selector";
@@ -29,35 +30,40 @@ import ReverseSelector from "./ReverseSelector";
 export default class SubTrees {
 
 	public static AIBrain(): Tree {
-		var selector = new Selector();
+		var sequence = new Sequence();
 		{
-			var setLv1 = new Sequence();
+			var energyLevelSelecter = new Selector();
 			{
-				var check = new CheckEnergyCapcity(0,500)
-				var adjust = new AdjustStrategy(1);
+				var setLv1 = new Sequence();
+				{
+					var check = new CheckEnergyCapcity(0,500)
+					var adjust = new AdjustStrategy(1);
+				}
+				setLv1.SubTrees.push(check, adjust);
+				var setLv2 = new Sequence();
+				{
+					var check = new CheckEnergyCapcity(500,750)
+					var adjust = new AdjustStrategy(2);
+				}
+				setLv2.SubTrees.push(check, adjust);
+				var setLv3 = new Sequence();
+				{
+					var check = new CheckEnergyCapcity(750,1200)
+					var adjust = new AdjustStrategy(3);
+				}
+				setLv3.SubTrees.push(check, adjust);
+				var setLv4 = new Sequence();
+				{
+					var check = new CheckEnergyCapcity(1200, 1700)
+					var adjust = new AdjustStrategy(4);
+				}
+				setLv4.SubTrees.push(check, adjust);
 			}
-			setLv1.SubTrees.push(check, adjust);
-			var setLv2 = new Sequence();
-			{
-				var check = new CheckEnergyCapcity(500,750)
-				var adjust = new AdjustStrategy(2);
-			}
-			setLv2.SubTrees.push(check, adjust);
-			var setLv3 = new Sequence();
-			{
-				var check = new CheckEnergyCapcity(750,1200)
-				var adjust = new AdjustStrategy(3);
-			}
-			setLv3.SubTrees.push(check, adjust);
-			var setLv4 = new Sequence();
-			{
-				var check = new CheckEnergyCapcity(1200, 1700)
-				var adjust = new AdjustStrategy(4);
-			}
-			setLv4.SubTrees.push(check, adjust);
+			energyLevelSelecter.SubTrees.push(setLv1, setLv2, setLv3, setLv4);
+
 		}
-		selector.SubTrees.push(setLv1, setLv2, setLv3, setLv4);
-		return selector;
+		sequence.SubTrees.push(energyLevelSelecter)
+		return sequence;
 	}
 
 	public static AISpawn(): Tree {
@@ -67,9 +73,9 @@ export default class SubTrees {
 			{
 				var baseLv1Build = new Selector();
 				baseLv1Build.SubTrees.push(
-					new CanBuildCreep("harvester", "Havester", 1),  
-					new CanBuildCreep("upgrader", "Upgrader", 1), 
-					new CanBuildCreep("builder", "Builder", 1)
+					new TryBuildCreep("harvester", "Havester", 1),  
+					new TryBuildCreep("upgrader", "Upgrader", 1), 
+					new TryBuildCreep("builder", "Builder", 1)
 				);
 			}
 			baseLv1.SubTrees.push(new CheckTotalEnergy(0, 301), baseLv1Build, new ResultAction(true));
@@ -80,8 +86,8 @@ export default class SubTrees {
 				{
 					var harvesterBuild = new Selector()
 					harvesterBuild.SubTrees.push(
-						new CanBuildCreep("harvester", "Havester", 2), 
-						new CanBuildCreep("harvester", "Havester", 1), 
+						new TryBuildCreep("harvester", "Havester", 2), 
+						new TryBuildCreep("harvester", "Havester", 1), 
 						new ResultAction(true)
 					);
 					var minerBuild = new Sequence();
@@ -90,9 +96,9 @@ export default class SubTrees {
 				baseLv2BuildPre.SubTrees.push(harvesterBuild, minerBuild);
 				var baseLv2Build = new Selector();
 				baseLv2Build.SubTrees.push(
-					new CanBuildCreep("carrier", "Carrier", 2), 
-					new CanBuildCreep("upgrader", "Upgrader", 2), 
-					new CanBuildCreep("builder", "Builder", 2)
+					new TryBuildCreep("carrier", "Carrier", 2), 
+					new TryBuildCreep("upgrader", "Upgrader", 2), 
+					new TryBuildCreep("builder", "Builder", 2)
 				)
 			}
 			baseLv2.SubTrees.push(new CheckTotalEnergy(301, 551), baseLv2BuildPre, baseLv2Build, new ResultAction(true))
@@ -103,9 +109,9 @@ export default class SubTrees {
 				{
 					var harvesterBuild = new Selector();
 					harvesterBuild.SubTrees.push(
-						new CanBuildCreep("harvester", "Havester", 3), 
-						new CanBuildCreep("harvester", "Havester", 2), 
-						new CanBuildCreep("harvester", "Havester", 1), 
+						new TryBuildCreep("harvester", "Havester", 3), 
+						new TryBuildCreep("harvester", "Havester", 2), 
+						new TryBuildCreep("harvester", "Havester", 1), 
 						new ResultAction(true)
 					);
 					var minerBuild = new Sequence();
@@ -116,11 +122,11 @@ export default class SubTrees {
 				var baseLv3Build = new Selector();
 				{
 					var carrierBuild = new Sequence();
-					carrierBuild.SubTrees.push(new CanBuildCreep("carrier", "Carrier", 3));
+					carrierBuild.SubTrees.push(new TryBuildCreep("carrier", "Carrier", 3));
 					var upgraderBuild = new Sequence();
-					upgraderBuild.SubTrees.push(new CanBuildCreep("upgrader", "Upgrader", 3));
+					upgraderBuild.SubTrees.push(new TryBuildCreep("upgrader", "Upgrader", 3));
 					var builderBuild = new Sequence();
-					builderBuild.SubTrees.push(new CanBuildCreep("builder", "Builder", 3));
+					builderBuild.SubTrees.push(new TryBuildCreep("builder", "Builder", 3));
 				}
 				baseLv3Build.SubTrees.push(carrierBuild, upgraderBuild, builderBuild)
 			}
@@ -132,10 +138,10 @@ export default class SubTrees {
 				{
 					var harvesterBuild = new Selector();
 					harvesterBuild.SubTrees.push(
-						new CanBuildCreep("harvester", "Havester", 4), 
-						new CanBuildCreep("harvester", "Havester", 3), 
-						new CanBuildCreep("harvester", "Havester", 2), 
-						new CanBuildCreep("harvester", "Havester", 1), 
+						new TryBuildCreep("harvester", "Havester", 4), 
+						new TryBuildCreep("harvester", "Havester", 3), 
+						new TryBuildCreep("harvester", "Havester", 2), 
+						new TryBuildCreep("harvester", "Havester", 1), 
 						new ResultAction(true)
 					);
 					var minerBuild = new Sequence();
@@ -145,9 +151,9 @@ export default class SubTrees {
 
 				var baseLv4Build = new Selector();
 				baseLv4Build.SubTrees.push(
-					new CanBuildCreep("carrier", "Carrier", 4), 
-					new CanBuildCreep("upgrader", "Upgrader", 4), 
-					new CanBuildCreep("builder", "Builder", 4)
+					new TryBuildCreep("carrier", "Carrier", 4), 
+					new TryBuildCreep("upgrader", "Upgrader", 4), 
+					new TryBuildCreep("builder", "Builder", 4)
 				);
 			}
 			baseLv4.SubTrees.push(new CheckTotalEnergy(801, 1301),baseLv4BuildPre, baseLv4Build)

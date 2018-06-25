@@ -1,7 +1,7 @@
 import Board from "./Board";
 import Tree from "./Tree";
 import Status from "./Status"
-import { CreepConfig } from "../utils/CreepConfig"
+import { BuildCreepHelper } from "../utils/CreepConfig"
 
 export class CompleteCreepNumber extends Tree {
 	role: string
@@ -14,79 +14,19 @@ export class CompleteCreepNumber extends Tree {
 		this.level = level;
 	}
 	public Execute(): Status {
-		var screeps = _.filter(Game.creeps, (creep) => creep.memory.role == this.role && creep.memory.level == this.level);
+		var number = BaseActions.GetCreepNumber(this.role, this.level);
 		var targetNumber = Board.CreepNumber[this.role][this.level];
-		console.log("Need Role", this.role, "\t[level", this.level, "]", targetNumber, "\thave", screeps.length)
-		if (screeps.length >= targetNumber) {
+		if (number >= targetNumber) {
 			return Status.Succeed;
 		}
 
-		var newName = "LV" + this.level + "-" + this.name + "-" + Game.time;
-		var returnCode: ScreepsReturnCode = -15;
-		if (this.level == 1) {
-			if (this.role == "harvester" || this.role == "upgrader" || this.role == "builder") {
-				returnCode = CreepConfig.BuildWorkerLv1(this.role, Board.CurrentSpawn, newName);
-			}
-			else {
-				return Status.Failure;
-			}
-		}
-		else if (this.level == 2) {
-			if (this.role == "harvester" || this.role == "upgrader" || this.role == "builder") {
-				returnCode = CreepConfig.BuildWorkerLv2(this.role, Board.CurrentSpawn, newName);
-			}
-			else if (this.role == "miner") {
-				returnCode = CreepConfig.BuildMinerLv2(Board.CurrentSpawn, newName);
-			}
-			else if (this.role == "carrier") {
-				returnCode = CreepConfig.BuildCarrierLv2(Board.CurrentSpawn, newName);
-			}
-			else {
-				return Status.Failure;
-			}
-		}
-		else if (this.level == 3) {
-			if (this.role == "harvester" || this.role == "upgrader" || this.role == "builder") {
-				returnCode = CreepConfig.BuildWorkerLv3(this.role, Board.CurrentSpawn, newName);
-			}
-			else if (this.role == "miner") {
-				returnCode = CreepConfig.BuildMinerLv2(Board.CurrentSpawn, newName)
-			}
-			else if (this.role == "carrier") {
-				returnCode = CreepConfig.BuildCarrierLv3(Board.CurrentSpawn, newName);
-			}
-			else {
-				return Status.Failure;
-			}
-		}
-		else if (this.level == 4) {
-			if (this.role == "harvester" || this.role == "upgrader" || this.role == "builder") {
-				returnCode = CreepConfig.BuildWorkerLv4(this.role, Board.CurrentSpawn, newName);
-			}
-			else if (this.role == "miner") {
-				returnCode = CreepConfig.BuildMinerLv2(Board.CurrentSpawn, newName)
-			}
-			else if (this.role == "carrier") {
-				returnCode = CreepConfig.BuildCarrierLv4(Board.CurrentSpawn, newName);
-			}
-			else {
-				return Status.Failure;
-			}
-		}
-		else {
-			return Status.Failure;
-		}
-		if (returnCode == 0) {
-			return Status.Failure;
-		}
-		else {
-			console.log("Try Build Creep " + newName + " Failed code = " + returnCode);
-			return Status.Failure;
-		}
+		console.log("Need Role", this.role, "\t[level", this.level, "]", targetNumber, "\thave", number)
+		BaseActions.BuildCreep(this.role, this.name, this.level);
+		return Status.Failure;
 	}
 }
 
-export class CanBuildCreep extends Tree {
+export class TryBuildCreep extends Tree {
 	role: string
 	name: string
 	level: number
@@ -97,97 +37,37 @@ export class CanBuildCreep extends Tree {
 		this.level = level;
 	}
 	public Execute(): Status {
-		var screeps = _.filter(Game.creeps, (creep) => creep.memory.role == this.role && creep.memory.level == this.level);
+		var number = BaseActions.GetCreepNumber(this.role, this.level);
 		var targetNumber = Board.CreepNumber[this.role][this.level];
-		console.log("Need Role", this.role, "\t[level", this.level, "]", targetNumber, "\thave", screeps.length)
-		if (screeps.length >= targetNumber) {
+		if (number >= targetNumber) {
 			return Status.Failure;
 		}
-
-		var newName = "LV" + this.level + "-" + this.name + "-" + Game.time;
-		var returnCode: ScreepsReturnCode = -15;
-		if (this.level == 1) {
-			if (this.role == "harvester" || this.role == "upgrader" || this.role == "builder") {
-				returnCode = CreepConfig.BuildWorkerLv1(this.role, Board.CurrentSpawn, newName);
-			}
-			else {
-				return Status.Failure;
-			}
-		}
-		else if (this.level == 2) {
-			if (this.role == "harvester" || this.role == "upgrader" || this.role == "builder") {
-				returnCode = CreepConfig.BuildWorkerLv2(this.role, Board.CurrentSpawn, newName);
-			}
-			else if (this.role == "miner") {
-				returnCode = CreepConfig.BuildMinerLv2(Board.CurrentSpawn, newName);
-			}
-			else if (this.role == "carrier") {
-				returnCode = CreepConfig.BuildCarrierLv2(Board.CurrentSpawn, newName);
-			}
-			else {
-				return Status.Failure;
-			}
-		}
-		else if (this.level == 3) {
-			if (this.role == "harvester" || this.role == "upgrader" || this.role == "builder") {
-				returnCode = CreepConfig.BuildWorkerLv3(this.role, Board.CurrentSpawn, newName);
-			}
-			else if (this.role == "miner") {
-				returnCode = CreepConfig.BuildMinerLv2(Board.CurrentSpawn, newName)
-			}
-			else if (this.role == "carrier") {
-				returnCode = CreepConfig.BuildCarrierLv3(Board.CurrentSpawn, newName);
-			}
-			else {
-				return Status.Failure;
-			}
-		}
-		else if (this.level == 4) {
-			if (this.role == "harvester" || this.role == "upgrader" || this.role == "builder") {
-				returnCode = CreepConfig.BuildWorkerLv4(this.role, Board.CurrentSpawn, newName);
-			}
-			else if (this.role == "miner") {
-				returnCode = CreepConfig.BuildMinerLv2(Board.CurrentSpawn, newName)
-			}
-			else if (this.role == "carrier") {
-				returnCode = CreepConfig.BuildCarrierLv4(Board.CurrentSpawn, newName);
-			}
-			else {
-				return Status.Failure;
-			}
-		}
-		else {
-			return Status.Failure;
-		}
-		if (returnCode == 0) {
-			return Status.Succeed;
-		}
-		else {
-			console.log("Try Build Creep" + newName + " Failed code = " + returnCode);
-			return Status.Failure;
-		}
+		console.log("Need Role", this.role, "\t[level", this.level, "]", targetNumber, "\thave", number)
+		return BaseActions.BuildCreep(this.role, this.name, this.level);
 	}
 }
 
-// export class CheckCreepNum extends Tree {
-// 	role : string;
-// 	level: number
+export class CheckCreepNum extends Tree {
+	role: string;
+	level: number
+	isTrue: boolean
 
-// 	constructor(role:string, level:number) {
-// 		super();
-// 		this.role = role;
-// 		this.level = level;
-// 	}
-// 	public Execute(): Status {
-// 		var screeps = _.filter(Game.creeps, (creep) => creep.memory.role == this.role &&(this.level == 0|| creep.memory.level == this.level));
-// 		var targetNumber = Board.CreepNumber[this.role][this.level];
-// 		console.log("Need Role", this.role, "\t[level", this.level,"]", targetNumber, "\thave", screeps.length )
-// 		if (screeps.length < targetNumber) {
-// 			return Status.Succeed;
-// 		}
-// 		return Status.Failure;
-// 	}
-// }
+	constructor(role: string, level: number, isTrueWhenEqual: boolean) {
+		super();
+		this.role = role;
+		this.level = level;
+		this.isTrue = isTrueWhenEqual;
+	}
+	public Execute(): Status {
+		var screeps = _.filter(Game.creeps, (creep) => creep.memory.role == this.role && (this.level == 0 || creep.memory.level == this.level));
+		var targetNumber = Board.CreepNumber[this.role][this.level];
+		console.log("Need Role", this.role, "\t[level", this.level, "]", targetNumber, "\thave", screeps.length)
+		if (screeps.length < targetNumber) {
+			return this.isTrue ? Status.Failure : Status.Succeed;
+		}
+		return this.isTrue ? Status.Succeed : Status.Failure;
+	}
+}
 
 export class MoveAndHarvest extends Tree {
 	public Execute(): Status {
@@ -550,14 +430,13 @@ export class ResultAction extends Tree {
 }
 
 export class AdjustStrategy extends Tree {
-	strategyLevel: number
 	constructor(level: number) {
 		super();
-		this.strategyLevel = level;
+		Board.EnconemyLevel = level;
 	}
 	public Execute(): Status {
-		console.log("SetLevel = ", this.strategyLevel, "Current Energy = ", Board.CurrentSpawn.room.energyAvailable)
-		switch (this.strategyLevel) {
+		console.log("SetLevel = ", Board.EnconemyLevel, "Current Energy = ", Board.CurrentSpawn.room.energyAvailable)
+		switch (Board.EnconemyLevel) {
 			case 1:
 				Board.CreepNumber["harvester"] = [0, 3, 0, 0, 0];
 				Board.CreepNumber["upgrader"] = [0, 3, 0, 0, 0];
@@ -582,7 +461,7 @@ export class AdjustStrategy extends Tree {
 			case 4:
 				Board.CreepNumber["harvester"] = [0, 1, 0, 0, 1];
 				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 3];
-				Board.CreepNumber["builder"] = [0, 0, 0, 0, 3];
+				Board.CreepNumber["builder"] = [0, 0, 0, 0, 2];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 2];
 				break;
@@ -592,3 +471,28 @@ export class AdjustStrategy extends Tree {
 		return Status.Succeed;
 	}
 }
+
+class BaseActions {
+	public static BuildCreep(role: string, name: string, level: number) :Status {
+		var newName = "LV" + level + "-" + name + "-" + Game.time;
+			var returnCode = BuildCreepHelper.BuildCreep(role, level, Board.CurrentSpawn, newName);
+			if (returnCode == 0) {
+				return Status.Succeed;
+			}
+			else {
+				console.log("Try Build Creep " + newName + " Failed code = " + returnCode);
+				return Status.Failure;
+			}
+	}
+
+	public static GetCreepNumber(role: string, level: number) :number {
+		var creeps = _.filter(Game.creeps, (creep) => creep.memory.role == role && creep.memory.level == level);
+		return creeps.length
+	}
+
+	public static GetCreepNumberIgnoreLevel(role: string): number {
+		var creeps = _.filter(Game.creeps, (creep) => creep.memory.role == role);
+		return creeps.length
+	}
+}
+
