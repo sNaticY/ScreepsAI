@@ -16,6 +16,8 @@ import {
 	CheckTotalEnergy,
 	MoveAndPickupEnergy,
 	MoveAndWithdrawEnergyFormExtensions,
+	MoveAndWithdrawEnergyFromContainer,
+	MoveAndTransferBackToExtensionOrContainer,
 	AdjustStrategy,
 	LogAction,
 } from "./Actions";
@@ -96,7 +98,7 @@ export default class SubTrees {
 					var carrierBuild = new Sequence();
 					carrierBuild.SubTrees.push(new CheckCreepNum("carrier", 2), new BuildCreep("carrier", "Carrier", 2));
 					var upgraderBuild = new Sequence();
-					upgraderBuild.SubTrees.push(new CheckCreepNum("upgrader", 2), new BuildCreep("builder", "Builder", 2));
+					upgraderBuild.SubTrees.push(new CheckCreepNum("upgrader", 2), new BuildCreep("upgrader", "Upgrader", 2));
 					var builderBuild = new Sequence();
 					builderBuild.SubTrees.push(new CheckCreepNum("builder", 2), new BuildCreep("builder", "Builder", 2));
 				}
@@ -128,7 +130,7 @@ export default class SubTrees {
 					var carrierBuild = new Sequence();
 					carrierBuild.SubTrees.push(new CheckCreepNum("carrier", 3), new BuildCreep("carrier", "Carrier", 3));
 					var upgraderBuild = new Sequence();
-					upgraderBuild.SubTrees.push(new CheckCreepNum("upgrader", 3), new BuildCreep("builder", "Builder", 3));
+					upgraderBuild.SubTrees.push(new CheckCreepNum("upgrader", 3), new BuildCreep("upgrader", "Upgrader", 3));
 					var builderBuild = new Sequence();
 					builderBuild.SubTrees.push(new CheckCreepNum("builder", 3), new BuildCreep("builder", "Builder", 3));
 				}
@@ -162,7 +164,7 @@ export default class SubTrees {
 					var carrierBuild = new Sequence();
 					carrierBuild.SubTrees.push(new CheckCreepNum("carrier", 4), new BuildCreep("carrier", "Carrier", 4));
 					var upgraderBuild = new Sequence();
-					upgraderBuild.SubTrees.push(new CheckCreepNum("upgrader", 4), new BuildCreep("builder", "Builder", 4));
+					upgraderBuild.SubTrees.push(new CheckCreepNum("upgrader", 4), new BuildCreep("upgrader", "Upgrader", 4));
 					var builderBuild = new Sequence();
 					builderBuild.SubTrees.push(new CheckCreepNum("builder", 4), new BuildCreep("builder", "Builder", 4));
 				}
@@ -200,7 +202,13 @@ export default class SubTrees {
 
 	public static AICarrier() : Tree {
 		let tree = new Selector();
-		tree.SubTrees.push(new MoveAndPickupEnergy(), new MoveAndTransferBackToSpawnAndExtension(), new NothingToDoWarning());
+		{
+			var fromGround = new Selector();
+			fromGround.SubTrees.push(new MoveAndPickupEnergy(), new MoveAndTransferBackToExtensionOrContainer())
+			var fromExtension = new Selector();
+			fromExtension.SubTrees.push(new MoveAndWithdrawEnergyFromContainer(), new MoveAndTransferBackToSpawnAndExtension());
+		}
+		tree.SubTrees.push(fromGround, fromExtension, new NothingToDoWarning());
 		return tree;
 	}
 }

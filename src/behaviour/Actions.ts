@@ -117,7 +117,7 @@ export class CheckCreepNum extends Tree {
 export class MoveAndHarvest extends Tree {
 	public Execute(): Status {
 		var creep = Board.CurrentCreep;
-		if ((creep.memory.role != "miner" && creep.carry.energy >= creep.carryCapacity) || creep.memory.upgrading || creep.memory.building) {
+		if ((creep.memory.role != "miner" && creep.carry.energy >= creep.carryCapacity) || creep.memory.upgrading || creep.memory.building || creep.memory.transfering) {
 			
 			return Status.Failure;
 		}
@@ -144,23 +144,83 @@ export class MoveAndHarvest extends Tree {
 export class MoveAndTransferBackToSpawnAndExtension extends Tree {
 	public Execute(): Status {
 		var creep = Board.CurrentCreep;
-		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
-			filter: (structure) => {
-				return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN) &&
-					structure.energy < structure.energyCapacity;
-			}
-		});
+		if (creep.memory.transfering && creep.carry.energy == 0) {
+			creep.memory.transfering = false;
+			creep.say('🔄 harvest');
+			return Status.Failure;
+		}
 
-		if (target) {
-			var result = creep.transfer(target, RESOURCE_ENERGY);
-			if (result == ERR_NOT_IN_RANGE) {
-				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
+		if (!creep.memory.transfering && creep.carry.energy == creep.carryCapacity) {
+			creep.memory.transfering = true;
+			creep.say('⚡ transfering');
+		}
+		if(creep.memory.transfering)
+		{
+			var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+				filter: (structure) => {
+					return (((structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN) &&
+						structure.energy < structure.energyCapacity));
+				}
+			});
+
+			if (target) {
+				var result = creep.transfer(target, RESOURCE_ENERGY);
+				if (result == ERR_NOT_IN_RANGE) {
+					creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
+				}
+				else if (result != 0) {
+					//console.log("MoveAndTransferBackToSpawnAndExtension Failed", result)
+					return Status.Failure;
+				}
+				return Status.Succeed;
 			}
-			else if (result != 0) {
-				//console.log("MoveAndTransferBackToSpawnAndExtension Failed", result)
-				return Status.Failure;
+			else{
+				creep.memory.fromContainer = false;
 			}
-			return Status.Succeed;
+		}
+		// console.log("MoveAndTransferBackToSpawnAndExtension Failed, Didn't find target to transfer")
+		return Status.Failure;
+	}
+}
+
+export class MoveAndTransferBackToExtensionOrContainer extends Tree {
+	public Execute(): Status {
+		var creep = Board.CurrentCreep;
+		if(creep.memory.fromContainer)
+		{
+			console.log("creep.memory.fromContainer")
+			return Status.Failure;
+		}
+		if (creep.memory.transfering && creep.carry.energy == 0) {
+			creep.memory.transfering = false;
+			creep.say('🔄 harvest');
+			return Status.Failure;
+		}
+
+		if (!creep.memory.transfering && creep.carry.energy == creep.carryCapacity) {
+			creep.memory.transfering = true;
+			creep.say('⚡ transfering');
+		}
+		if(creep.memory.transfering)
+		{
+			var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+				filter: (structure) => {
+					return (((structure.structureType == STRUCTURE_EXTENSION) &&
+						structure.energy < structure.energyCapacity) || (structure.structureType == STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] < structure.storeCapacity));
+				}
+			});
+
+			if (target) {
+				var result = creep.transfer(target, RESOURCE_ENERGY);
+				if (result == ERR_NOT_IN_RANGE) {
+					creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
+				}
+				else if (result != 0) {
+					//console.log("MoveAndTransferBackToSpawnAndExtension Failed", result)
+					return Status.Failure;
+				}
+				return Status.Succeed;
+			}
 		}
 		// console.log("MoveAndTransferBackToSpawnAndExtension Failed, Didn't find target to transfer")
 		return Status.Failure;
@@ -170,13 +230,23 @@ export class MoveAndTransferBackToSpawnAndExtension extends Tree {
 export class MoveAndPickupEnergy extends Tree {
 	public Execute(): Status {
 		var creep = Board.CurrentCreep;
-		const target = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES);
+		if(creep.carry.energy >= creep.carryCapacity || creep.memory.upgrading || creep.memory.building || creep.memory.transfering) {
+			
+			return Status.Failure;
+		}
+		const target = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, { filter: (resource) => {
+			return resource.resourceType == RESOURCE_ENERGY && resource.amount >= 600
+		}});
 		if(target) {
 			var result = creep.pickup(target);
 			if(result == ERR_NOT_IN_RANGE) {
 				creep.moveTo(target);
 			}
-			else if(result != 0)
+			else if(result == 0)
+			{
+				creep.memory.fromContainer = false;
+			}
+			else
 			{
 				console.log("MoveAndPickupEnergy Failed", result)
 				return Status.Failure;
@@ -184,6 +254,41 @@ export class MoveAndPickupEnergy extends Tree {
 			return Status.Succeed;
 		}
 		// console.log("MoveAndTransferBackToSpawnAndExtension Failed, Didn't find target to transfer")
+		return Status.Failure;
+	}
+}
+
+export class MoveAndWithdrawEnergyFromContainer extends Tree {
+	public Execute(): Status {
+		var creep = Board.CurrentCreep;
+		if (creep.carry.energy >= creep.carryCapacity || creep.memory.upgrading || creep.memory.building || creep.memory.transfering) {
+			
+			return Status.Failure;
+		}
+
+		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+			filter: (structure) => {
+				return (structure.structureType == STRUCTURE_CONTAINER) &&
+					structure.store[RESOURCE_ENERGY] > 0;
+			}
+		});
+		
+		if (target) {
+			var result = creep.withdraw(target, RESOURCE_ENERGY);
+			if( result == 0)
+			{
+				creep.memory.fromContainer = true;
+			}
+			if (result == ERR_NOT_IN_RANGE) {
+				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
+			}
+			else if (result != 0) {
+				console.log("MoveAndHarvest Failed", result)
+				return Status.Failure;
+			}
+			return Status.Succeed;
+		}
+		// console.log("MoveAndHarvest Failed, Didn't find target to Harvest")
 		return Status.Failure;
 	}
 }
@@ -384,18 +489,21 @@ export class AdjustStrategy extends Tree {
 				Board.CreepNumber["builder"] = [0, 0, 3, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 4, 0, 0];
+				break;
 			case 3:
 				Board.CreepNumber["harvester"] = [1, 1, 1, 1, 0];
 				Board.CreepNumber["upgrader"] = [0, 0, 1, 3, 0];
 				Board.CreepNumber["builder"] = [0, 0, 1, 3, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 1, 3, 0];
+				break;
 			case 4:
 				Board.CreepNumber["harvester"] = [1, 1, 1, 1, 1];
 				Board.CreepNumber["upgrader"] = [0, 0, 1, 0, 3];
 				Board.CreepNumber["builder"] = [0, 0, 1, 0, 3];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 2];
+				break;
 			default:
 				return Status.Failure;
 		}

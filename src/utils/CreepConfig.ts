@@ -18,7 +18,7 @@ export class CreepConfig {
     }
 
     public static BuildWorkerLv4(role: string, spawn: StructureSpawn, name: string): ScreepsReturnCode {
-        var result = spawn.spawnCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], name, { memory: GenScreepsMemory(role, 3) });
+        var result = spawn.spawnCreep([WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], name, { memory: GenScreepsMemory(role, 4) });
         return result;
     }
 
@@ -55,5 +55,5 @@ function GenScreepsMemory(role: string, level: number) : CreepMemory {
     else{
         minerIndex = random(0,1);
     }
-    return {role: role, upgrading: false, building: false, harvestIndex: minerIndex, level: level};
+    return {role: role, upgrading: false, building: false, transfering: false, fromContainer: false, harvestIndex: minerIndex, level: level};
 }
