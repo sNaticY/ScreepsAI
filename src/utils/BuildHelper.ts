@@ -24,7 +24,7 @@ const BodyParts : Dictionary<List<BodyPartConstant[]>> = {
     ]
 }
 
-export class BuildCreepHelper {
+export class BuildHelper {
     public static BuildCreep(role: string,level: number, spawn: StructureSpawn, name: string): ScreepsReturnCode {
         if(role == "harvester" || role == "upgrader" || role == "builder")
         {
