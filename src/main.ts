@@ -1,7 +1,9 @@
 import { ErrorMapper } from "utils/ErrorMapper";
 import { SubTrees, Board } from "behaviour/index";
 
+
 var aiBrain = SubTrees.AIBrain();
+var aiConstrucion = SubTrees.AIConstruction();
 var aiSpawn = SubTrees.AISpawn();
 var aiHarvester = SubTrees.AIHarvester();
 var aiUpgrader = SubTrees.AIUpgrader();
@@ -17,6 +19,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
 	Board.CurrentSpawn = Game.spawns["Spawn1"];
 	
 	aiBrain.Execute();
+	aiConstrucion.Execute();
 	aiSpawn.Execute();
 
 	for (var name in Game.creeps) {

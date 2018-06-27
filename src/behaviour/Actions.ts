@@ -1,7 +1,133 @@
 import Board from "./Board";
 import Tree from "./Tree";
 import Status from "./Status"
-import { BuildCreepHelper } from "../utils/CreepConfig"
+import { BuildHelper } from "../utils/BuildHelper"
+import { List } from "lodash"
+
+export class LoopSleepTicks extends Tree {
+	tick: number = 0;
+	maxTick: number;
+	afterResult: boolean;
+
+	constructor(tick: number, afterResult: boolean) {
+		super();
+		this.maxTick = tick;
+		this.afterResult = afterResult;
+	}
+
+	public Execute() {
+		this.tick++;
+		if(this.tick >= this.maxTick)
+		{
+			this.tick = 0;
+			return this.afterResult?Status.Succeed :Status.Failure;
+		}
+		else
+		{
+			return this.afterResult?Status.Failure:Status.Succeed;
+		}
+	}
+}
+
+export class CheckFlag extends Tree {
+	x: number = 1;
+	y: number = 1;
+	checkNum: number = 0;
+
+	minPath: number = 9999;
+	minPathX: number = 0;
+	minPathY: number = 0;
+
+	resultPath: PathStep[] = [];
+
+	finish: boolean = false;
+	public Execute(): Status {
+		if (this.finish) {
+			return Status.Succeed;
+		}
+		var room = Board.CurrentSpawn.room;
+		if (Game.flags["MinFlag"]) {
+			Game.flags["MinFlag"].remove();
+		}
+
+		if (!room.controller) {
+			return Status.Failure;
+		}
+
+		var targets: List<RoomPosition> = [
+			room.find(FIND_SOURCES)[0].pos,
+			room.find(FIND_SOURCES)[1].pos,
+			Board.CurrentSpawn.pos,
+			room.controller.pos,
+		]
+
+		for (let i = 0; i < 25;) {
+			var pos = room.getPositionAt(this.x, this.y);
+			if (pos) {
+				var terrain = Game.map.getTerrainAt(this.x, this.y, room.name);
+				if (terrain != "wall") {
+					var totalLength: number = 0;
+					for (let j = 0; j < targets.length; j++) {
+						const target = targets[j];
+						var length = room.findPath(pos, target).length;
+						totalLength += length;
+					}
+					if (totalLength < this.minPath) {
+						this.minPath = totalLength;
+						this.minPathX = this.x;
+						this.minPathY = this.y;
+					}
+					console.log("x = ", this.x, " y = ", this.y," length = ", totalLength);
+					i++;
+				}
+				if (this.x + 1 == 50) {
+					this.x = 1;
+					if (this.y + 1 == 50) {
+						this.finish = true;
+						room.createFlag(this.minPathX, this.minPathY, "MinFlag");
+						var minPosition = room.getPositionAt(this.minPathX, this.minPathY)
+						if(minPosition)
+						{
+							for (let j = 0; j < targets.length; j++) {
+								const target = targets[j];
+								var path = room.findPath(minPosition, target);
+								for (let k = 0; k < path.length; k++) {
+									const roadPos = path[k];
+									room.createConstructionSite(roadPos.x, roadPos.y, STRUCTURE_ROAD);
+
+									
+								}
+
+								for(let k = 0; k < path.length; k++){
+									const roadPos = path[k];
+									if(room.createConstructionSite(roadPos.x - 1, roadPos.y - 1, STRUCTURE_ROAD) == 0){
+										continue;
+									}
+									if(room.createConstructionSite(roadPos.x - 1, roadPos.y + 1, STRUCTURE_ROAD) == 0){
+										continue;
+									}
+									if(room.createConstructionSite(roadPos.x + 1, roadPos.y - 1, STRUCTURE_ROAD) == 0){
+										continue;
+									}
+									if(room.createConstructionSite(roadPos.x + 1, roadPos.y + 1, STRUCTURE_ROAD) == 0){
+										continue;
+									}
+								}
+							}
+						}
+					}
+					else {
+						this.y++;
+					}
+				}
+				else {
+					this.x++;
+				}
+			}
+		}
+		return Status.Succeed;
+	}
+}
 
 export class CompleteCreepNumber extends Tree {
 	role: string
@@ -473,19 +599,19 @@ export class AdjustStrategy extends Tree {
 }
 
 class BaseActions {
-	public static BuildCreep(role: string, name: string, level: number) :Status {
+	public static BuildCreep(role: string, name: string, level: number): Status {
 		var newName = "LV" + level + "-" + name + "-" + Game.time;
-			var returnCode = BuildCreepHelper.BuildCreep(role, level, Board.CurrentSpawn, newName);
-			if (returnCode == 0) {
-				return Status.Succeed;
-			}
-			else {
-				console.log("Try Build Creep " + newName + " Failed code = " + returnCode);
-				return Status.Failure;
-			}
+		var returnCode = BuildHelper.BuildCreep(role, level, Board.CurrentSpawn, newName);
+		if (returnCode == 0) {
+			return Status.Succeed;
+		}
+		else {
+			console.log("Try Build Creep " + newName + " Failed code = " + returnCode);
+			return Status.Failure;
+		}
 	}
 
-	public static GetCreepNumber(role: string, level: number) :number {
+	public static GetCreepNumber(role: string, level: number): number {
 		var creeps = _.filter(Game.creeps, (creep) => creep.memory.role == role && creep.memory.level == level);
 		return creeps.length
 	}
