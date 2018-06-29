@@ -17,40 +17,45 @@ export class LoopSleepTicks extends Tree {
 
 	public Execute() {
 		this.tick++;
-		if(this.tick >= this.maxTick)
-		{
+		if (this.tick >= this.maxTick) {
 			this.tick = 0;
-			return this.afterResult?Status.Succeed :Status.Failure;
+			return this.afterResult ? Status.Succeed : Status.Failure;
 		}
-		else
-		{
-			return this.afterResult?Status.Failure:Status.Succeed;
+		else {
+			return this.afterResult ? Status.Failure : Status.Succeed;
 		}
 	}
 }
 
-export class CheckFlag extends Tree {
+export class CheckNearestFlag extends Tree {
 	x: number = 1;
 	y: number = 1;
-	checkNum: number = 0;
 
 	minPath: number = 9999;
 	minPathX: number = 0;
 	minPathY: number = 0;
 
-	resultPath: PathStep[] = [];
-
 	finish: boolean = false;
 	public Execute(): Status {
 		if (this.finish) {
+			//console.log("Finish Check Nearest Flag")
 			return Status.Succeed;
 		}
 		var room = Board.CurrentSpawn.room;
 		if (Game.flags["MinFlag"]) {
 			Game.flags["MinFlag"].remove();
+			room.memory.hasRoadBuild = false;
+			room.memory.hasMidFlagFound = false;
+
+			var sites = room.find(FIND_MY_CONSTRUCTION_SITES)
+			for (let i = 0; i < sites.length; i++) {
+				const element = sites[i];
+				element.remove()
+			}
 		}
 
 		if (!room.controller) {
+			//console.log("Finish Check Nearest Flag")
 			return Status.Failure;
 		}
 
@@ -69,15 +74,16 @@ export class CheckFlag extends Tree {
 					var totalLength: number = 0;
 					for (let j = 0; j < targets.length; j++) {
 						const target = targets[j];
-						var length = room.findPath(pos, target).length;
+						var length = room.findPath(pos, target, { ignoreCreeps: true, plainCost: 1, swampCost: 1 }).length;
 						totalLength += length;
+						//console.log("targetPos = ", target)
 					}
 					if (totalLength < this.minPath) {
 						this.minPath = totalLength;
 						this.minPathX = this.x;
 						this.minPathY = this.y;
 					}
-					console.log("x = ", this.x, " y = ", this.y," length = ", totalLength);
+					// console.log("x = ", this.x, " y = ", this.y, " length = ", totalLength, "minPath", this.minPath, "minX", this.minPathX, "minY", this.minPathY);
 					i++;
 				}
 				if (this.x + 1 == 50) {
@@ -85,36 +91,7 @@ export class CheckFlag extends Tree {
 					if (this.y + 1 == 50) {
 						this.finish = true;
 						room.createFlag(this.minPathX, this.minPathY, "MinFlag");
-						var minPosition = room.getPositionAt(this.minPathX, this.minPathY)
-						if(minPosition)
-						{
-							for (let j = 0; j < targets.length; j++) {
-								const target = targets[j];
-								var path = room.findPath(minPosition, target);
-								for (let k = 0; k < path.length; k++) {
-									const roadPos = path[k];
-									room.createConstructionSite(roadPos.x, roadPos.y, STRUCTURE_ROAD);
-
-									
-								}
-
-								for(let k = 0; k < path.length; k++){
-									const roadPos = path[k];
-									if(room.createConstructionSite(roadPos.x - 1, roadPos.y - 1, STRUCTURE_ROAD) == 0){
-										continue;
-									}
-									if(room.createConstructionSite(roadPos.x - 1, roadPos.y + 1, STRUCTURE_ROAD) == 0){
-										continue;
-									}
-									if(room.createConstructionSite(roadPos.x + 1, roadPos.y - 1, STRUCTURE_ROAD) == 0){
-										continue;
-									}
-									if(room.createConstructionSite(roadPos.x + 1, roadPos.y + 1, STRUCTURE_ROAD) == 0){
-										continue;
-									}
-								}
-							}
-						}
+						return Status.Succeed;
 					}
 					else {
 						this.y++;
@@ -125,34 +102,67 @@ export class CheckFlag extends Tree {
 				}
 			}
 		}
-		return Status.Succeed;
-	}
-}
-
-export class CompleteCreepNumber extends Tree {
-	role: string
-	name: string
-	level: number
-	constructor(role: string, name: string, level: number) {
-		super();
-		this.role = role;
-		this.name = name;
-		this.level = level;
-	}
-	public Execute(): Status {
-		var number = BaseActions.GetCreepNumber(this.role, this.level);
-		var targetNumber = Board.CreepNumber[this.role][this.level];
-		if (number >= targetNumber) {
-			return Status.Succeed;
-		}
-
-		console.log("Need Role", this.role, "\t[level", this.level, "]", targetNumber, "\thave", number)
-		BaseActions.BuildCreep(this.role, this.name, this.level);
+		// console.log("Check Nearest Flag Status Failure")
 		return Status.Failure;
 	}
 }
 
-export class TryBuildCreep extends Tree {
+export class BuildPathFromMinFlag extends Tree {
+	Execute(): Status {
+		var room = Board.CurrentSpawn.room;
+		if (room.memory.hasRoadBuild) {
+			return Status.Succeed;
+		}
+		var flag = Game.flags["MinFlag"];
+		var path: PathStep[] = [];
+		if (room.controller) {
+			var controllerPath = room.findPath(flag.pos, room.controller.pos, { ignoreCreeps: true, plainCost: 1, swampCost: 1 });
+			room.memory.controllerMid = controllerPath[Math.ceil(controllerPath.length / 2)];
+			path.push(...controllerPath)
+		}
+		path.push(...room.findPath(flag.pos, Board.CurrentSpawn.pos, { ignoreCreeps: true, plainCost: 1, swampCost: 1 }))
+		var sources = room.find(FIND_SOURCES)
+		if (room.memory.sourcePathMid != []) {
+			room.memory.sourcePathMid = [];
+		}
+		for (let i = 0; i < sources.length; i++) {
+			const element = sources[i];
+			var sourcePath = room.findPath(flag.pos, element.pos, { ignoreCreeps: true, plainCost: 1, swampCost: 1 })
+			room.memory.sourcePathMid[i] = sourcePath[Math.ceil(sourcePath.length / 2)];
+			console.log("Add source path", i)
+			path.push(...sourcePath)
+		}
+		BuildHelper.BuildRoad(path, room);
+		room.memory.hasRoadBuild = true;
+		return Status.Succeed;
+	}
+}
+
+export class BuildExtensionsByPath extends Tree {
+	Execute(): Status {
+		var room = Board.CurrentSpawn.room;
+		if (room.memory.hasMidFlagFound) {
+			return Status.Succeed;
+		}
+		for (let i = 0; i < room.memory.sourcePathMid.length; i++) {
+			const element = room.memory.sourcePathMid[i];
+			if (Game.flags["sourcePathMid" + i]) {
+				Game.flags["sourcePathMid" + i].remove;
+			}
+			console.log("Add flag in path" + i, "x =", element.x, "y =", element.y)
+			room.createFlag(element.x, element.y, "sourcePathMid" + i);
+		}
+		if (Game.flags["controllerPathMid"]) {
+			Game.flags["controllerPathMid"].remove;
+		}
+		room.createFlag(room.memory.controllerMid.x, room.memory.controllerMid.y, "controllerPathMid")
+		room.memory.hasMidFlagFound = true;
+		return Status.Succeed;
+	}
+
+}
+
+export class BuildCreep extends Tree {
 	role: string
 	name: string
 	level: number
@@ -163,32 +173,36 @@ export class TryBuildCreep extends Tree {
 		this.level = level;
 	}
 	public Execute(): Status {
-		var number = BaseActions.GetCreepNumber(this.role, this.level);
-		var targetNumber = Board.CreepNumber[this.role][this.level];
-		if (number >= targetNumber) {
-			return Status.Failure;
-		}
-		console.log("Need Role", this.role, "\t[level", this.level, "]", targetNumber, "\thave", number)
+		//console.log("Try build", this.role, "\t[level", this.level, "]")
 		return BaseActions.BuildCreep(this.role, this.name, this.level);
 	}
 }
 
 export class CheckCreepNum extends Tree {
 	role: string;
-	level: number
+	level: number | undefined
 	isTrue: boolean
 
-	constructor(role: string, level: number, isTrueWhenEqual: boolean) {
+	constructor(role: string, isTrueWhenEqual: boolean, level: number | undefined) {
 		super();
 		this.role = role;
-		this.level = level;
+		if (level) {
+			this.level = level;
+		}
 		this.isTrue = isTrueWhenEqual;
 	}
 	public Execute(): Status {
-		var screeps = _.filter(Game.creeps, (creep) => creep.memory.role == this.role && (this.level == 0 || creep.memory.level == this.level));
-		var targetNumber = Board.CreepNumber[this.role][this.level];
-		console.log("Need Role", this.role, "\t[level", this.level, "]", targetNumber, "\thave", screeps.length)
-		if (screeps.length < targetNumber) {
+		var targetNumber: number = 0;
+		var creepsNumber: number = 0;
+		if (this.level) {
+			creepsNumber = BaseActions.GetCreepNumber(this.role, this.level);
+			targetNumber = Board.CreepNumber[this.role][this.level];
+		} else {
+			creepsNumber = BaseActions.GetCreepNumberIgnoreLevel(this.role);
+			targetNumber = Board.CreepNumber[this.role][0];
+		}
+		// console.log("Need Role", this.role, "\t[ level", this.level, "]", targetNumber, "\thave", creepsNumber)
+		if (creepsNumber < targetNumber) {
 			return this.isTrue ? Status.Failure : Status.Succeed;
 		}
 		return this.isTrue ? Status.Succeed : Status.Failure;
@@ -249,7 +263,7 @@ export class MoveAndTransferBackToSpawnAndExtension extends Tree {
 					creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
 				}
 				else if (result != 0) {
-					//console.log("MoveAndTransferBackToSpawnAndExtension Failed", result)
+					// console.log("MoveAndTransferBackToSpawnAndExtension Failed", result)
 					return Status.Failure;
 				}
 				return Status.Succeed;
@@ -360,7 +374,7 @@ export class MoveAndWithdrawEnergyFromContainer extends Tree {
 				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
 			}
 			else if (result != 0) {
-				console.log("MoveAndHarvest Failed", result)
+				// console.log("MoveAndHarvest Failed", result)
 				return Status.Failure;
 			}
 			return Status.Succeed;
@@ -544,23 +558,15 @@ export class LogAction extends Tree {
 	}
 }
 
-export class ResultAction extends Tree {
-	result: boolean
-	constructor(result: boolean) {
-		super();
-		this.result = result;
-	}
-	public Execute(): Status {
-		return this.result ? Status.Succeed : Status.Failure;
-	}
-}
 
 export class AdjustStrategy extends Tree {
+	level: number;
 	constructor(level: number) {
 		super();
-		Board.EnconemyLevel = level;
+		this.level = level;
 	}
 	public Execute(): Status {
+		Board.EnconemyLevel = this.level;
 		console.log("SetLevel = ", Board.EnconemyLevel, "Current Energy = ", Board.CurrentSpawn.room.energyAvailable)
 		switch (Board.EnconemyLevel) {
 			case 1:
@@ -606,7 +612,7 @@ class BaseActions {
 			return Status.Succeed;
 		}
 		else {
-			console.log("Try Build Creep " + newName + " Failed code = " + returnCode);
+			// console.log("Try Build Creep " + newName + " Failed code = " + returnCode);
 			return Status.Failure;
 		}
 	}

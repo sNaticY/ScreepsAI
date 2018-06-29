@@ -12,5 +12,10 @@ export default abstract class Tree implements TreeNode {
     }
 
     abstract Execute() : Status;
+
+    public AddSubTree(...subtrees:Tree[]) :Tree {
+        this.SubTrees.push(...subtrees);
+        return this;
+    }
 }
 	

@@ -19,6 +19,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
 	Board.CurrentSpawn = Game.spawns["Spawn1"];
 	
 	aiBrain.Execute();
+	
 	aiConstrucion.Execute();
 	aiSpawn.Execute();
 
