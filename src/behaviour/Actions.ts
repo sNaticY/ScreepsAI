@@ -1,8 +1,8 @@
-import Board from "./Board";
+import Board, { Strategy } from "./Board";
 import Tree from "./Tree";
 import Status from "./Status"
 import { BuildHelper } from "../utils/BuildHelper"
-import { List } from "lodash"
+import { List, random } from "lodash"
 
 export class LoopSleepTicks extends Tree {
 	tick: number = 0;
@@ -23,6 +23,25 @@ export class LoopSleepTicks extends Tree {
 		}
 		else {
 			return this.afterResult ? Status.Failure : Status.Succeed;
+		}
+	}
+}
+
+export class CheckCurStrategy extends Tree {
+	targetStrategy: Strategy
+	ifMatch: boolean
+	constructor(target: Strategy, ifMatch: boolean) {
+		super();
+		this.targetStrategy = target;
+		this.ifMatch = ifMatch;
+	}
+	Execute(): Status {
+		var match = Board.Strategy == this.targetStrategy;
+		if (this.ifMatch) {
+			return match ? Status.Succeed : Status.Failure;
+		}
+		else {
+			return match ? Status.Failure : Status.Succeed;
 		}
 	}
 }
@@ -114,22 +133,23 @@ export class BuildPathFromMinFlag extends Tree {
 			return Status.Succeed;
 		}
 		var flag = Game.flags["MinFlag"];
+		if (!flag) return Status.Failure;
 		var path: PathStep[] = [];
+		room.memory.extensionPos = [];
+		room.memory.extensionFindRange = [1, 1, 1];
 		if (room.controller) {
 			var controllerPath = room.findPath(flag.pos, room.controller.pos, { ignoreCreeps: true, plainCost: 1, swampCost: 1 });
-			room.memory.controllerMid = controllerPath[Math.ceil(controllerPath.length / 2)];
+			var pos = room.getPositionAt(controllerPath[Math.ceil(controllerPath.length / 2)].x, controllerPath[Math.ceil(controllerPath.length / 2)].y);
+			if (pos) { room.memory.extensionPos.push(pos); }
 			path.push(...controllerPath)
 		}
 		path.push(...room.findPath(flag.pos, Board.CurrentSpawn.pos, { ignoreCreeps: true, plainCost: 1, swampCost: 1 }))
 		var sources = room.find(FIND_SOURCES)
-		if (room.memory.sourcePathMid != []) {
-			room.memory.sourcePathMid = [];
-		}
 		for (let i = 0; i < sources.length; i++) {
 			const element = sources[i];
 			var sourcePath = room.findPath(flag.pos, element.pos, { ignoreCreeps: true, plainCost: 1, swampCost: 1 })
-			room.memory.sourcePathMid[i] = sourcePath[Math.ceil(sourcePath.length / 2)];
-			console.log("Add source path", i)
+			var pos = room.getPositionAt(sourcePath[Math.ceil(sourcePath.length / 2)].x, sourcePath[Math.ceil(sourcePath.length / 2)].y);
+			if (pos) { room.memory.extensionPos.push(pos); }
 			path.push(...sourcePath)
 		}
 		BuildHelper.BuildRoad(path, room);
@@ -141,23 +161,39 @@ export class BuildPathFromMinFlag extends Tree {
 export class BuildExtensionsByPath extends Tree {
 	Execute(): Status {
 		var room = Board.CurrentSpawn.room;
-		if (room.memory.hasMidFlagFound) {
+		let extensions = room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType == STRUCTURE_EXTENSION });
+		let extensionSites = room.find(FIND_CONSTRUCTION_SITES, { filter: (s) => s.structureType == STRUCTURE_EXTENSION })
+		let extensionCount: number = 0;
+		if (room.controller) {
+			switch (room.controller.level) {
+				case 2:
+					extensionCount = 5;
+					break;
+				case 3:
+					extensionCount = 10;
+					break;
+				default:
+					extensionCount = (room.controller.level - 2) * 10;
+					break;
+			}
+			if (room.memory.hasMidFlagFound) {
+				return Status.Succeed;
+			}
+			var posIndex = random(0, 2)
+			for (let i = extensions.length + extensionSites.length; i < extensionCount;) {
+				var result = BuildHelper.BuildExtensionNearPos(room.memory.extensionPos[posIndex], room.memory.extensionFindRange[posIndex])
+				if (result == 0) {
+					i++;
+					posIndex = random(0, 2)
+					console.log("build", i, "extension, total", extensionCount)
+				}
+				else if (result == -9) {
+					room.memory.extensionFindRange[posIndex]++;
+				}
+			}
 			return Status.Succeed;
 		}
-		for (let i = 0; i < room.memory.sourcePathMid.length; i++) {
-			const element = room.memory.sourcePathMid[i];
-			if (Game.flags["sourcePathMid" + i]) {
-				Game.flags["sourcePathMid" + i].remove;
-			}
-			console.log("Add flag in path" + i, "x =", element.x, "y =", element.y)
-			room.createFlag(element.x, element.y, "sourcePathMid" + i);
-		}
-		if (Game.flags["controllerPathMid"]) {
-			Game.flags["controllerPathMid"].remove;
-		}
-		room.createFlag(room.memory.controllerMid.x, room.memory.controllerMid.y, "controllerPathMid")
-		room.memory.hasMidFlagFound = true;
-		return Status.Succeed;
+		return Status.Failure;
 	}
 
 }
@@ -173,8 +209,9 @@ export class BuildCreep extends Tree {
 		this.level = level;
 	}
 	public Execute(): Status {
-		//console.log("Try build", this.role, "\t[level", this.level, "]")
-		return BaseActions.BuildCreep(this.role, this.name, this.level);
+		var result = BaseActions.BuildCreep(this.role, this.name, this.level);
+		// console.log("Try build", this.role, "\t[level", this.level, "]" , result);
+		return result;
 	}
 }
 
@@ -201,7 +238,7 @@ export class CheckCreepNum extends Tree {
 			creepsNumber = BaseActions.GetCreepNumberIgnoreLevel(this.role);
 			targetNumber = Board.CreepNumber[this.role][0];
 		}
-		// console.log("Need Role", this.role, "\t[ level", this.level, "]", targetNumber, "\thave", creepsNumber)
+		console.log("Need Role", this.role, "\t[ level", this.level, "]", targetNumber, "\thave", creepsNumber)
 		if (creepsNumber < targetNumber) {
 			return this.isTrue ? Status.Failure : Status.Succeed;
 		}
@@ -453,12 +490,21 @@ export class MoveAndBuildConstruction extends Tree {
 		}
 
 		if (creep.memory.building) {
-			var target = creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
+			var target = creep.pos.findClosestByRange<FIND_CONSTRUCTION_SITES>(FIND_CONSTRUCTION_SITES, { filter: (s) => s.structureType == STRUCTURE_EXTENSION });
 			if (target) {
 				if (creep.build(target) == ERR_NOT_IN_RANGE) {
 					creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
 				}
 				return Status.Succeed;
+			}
+			else {
+				var target = creep.pos.findClosestByRange<FIND_CONSTRUCTION_SITES>(FIND_CONSTRUCTION_SITES);
+				if (target) {
+					if (creep.build(target) == ERR_NOT_IN_RANGE) {
+						creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
+					}
+					return Status.Succeed;
+				}
 			}
 		}
 		return Status.Failure;
@@ -570,32 +616,60 @@ export class AdjustStrategy extends Tree {
 		console.log("SetLevel = ", Board.EnconemyLevel, "Current Energy = ", Board.CurrentSpawn.room.energyAvailable)
 		switch (Board.EnconemyLevel) {
 			case 1:
-				Board.CreepNumber["harvester"] = [0, 3, 0, 0, 0];
-				Board.CreepNumber["upgrader"] = [0, 3, 0, 0, 0];
-				Board.CreepNumber["builder"] = [0, 3, 0, 0, 0];
-				Board.CreepNumber["miner"] = [0, 0, 0, 0, 0];
-				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [0, 3, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 3, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["builder"] = [0, 3, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["miner"] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 				break;
 			case 2:
-				Board.CreepNumber["harvester"] = [0, 1, 1, 0, 0];
-				Board.CreepNumber["upgrader"] = [0, 0, 3, 0, 0];
-				Board.CreepNumber["builder"] = [0, 0, 3, 0, 0];
-				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0];
-				Board.CreepNumber["carrier"] = [0, 0, 4, 0, 0];
+				Board.CreepNumber["harvester"] = [0, 1, 1, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 3, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["builder"] = [0, 0, 3, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["carrier"] = [0, 0, 4, 0, 0, 0, 0, 0, 0];
 				break;
 			case 3:
-				Board.CreepNumber["harvester"] = [0, 1, 0, 1, 0];
-				Board.CreepNumber["upgrader"] = [0, 0, 0, 3, 0];
-				Board.CreepNumber["builder"] = [0, 0, 0, 3, 0];
-				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0];
-				Board.CreepNumber["carrier"] = [0, 0, 1, 3, 0];
+				Board.CreepNumber["harvester"] = [0, 1, 0, 1, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 3, 0, 0, 0, 0, 0];
+				Board.CreepNumber["builder"] = [0, 0, 0, 3, 0, 0, 0, 0, 0];
+				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["carrier"] = [0, 0, 1, 3, 0, 0, 0, 0, 0];
 				break;
 			case 4:
-				Board.CreepNumber["harvester"] = [0, 1, 0, 0, 1];
-				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 3];
-				Board.CreepNumber["builder"] = [0, 0, 0, 0, 2];
-				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0];
-				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 2];
+				Board.CreepNumber["harvester"] = [0, 1, 0, 0, 1, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 3, 0, 0, 0, 0];
+				Board.CreepNumber["builder"] = [0, 0, 0, 0, 2, 0, 0, 0, 0];
+				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 2, 0, 0, 0, 0];
+				break;
+			case 5:
+				Board.CreepNumber["harvester"] = [0, 1, 0, 1, 0, 1, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 3, 0, 0, 0];
+				Board.CreepNumber["builder"] = [0, 0, 0, 0, 0, 2, 0, 0, 0];
+				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 0, 1, 0, 0, 0];
+				break;
+			case 6:
+				Board.CreepNumber["harvester"] = [0, 1, 0, 0, 1, 0, 1, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 0, 3, 0, 0];
+				Board.CreepNumber["builder"] = [0, 0, 0, 0, 0, 0, 2, 0, 0];
+				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 0, 0, 1, 0, 0];
+				break;
+			case 7:
+				Board.CreepNumber["harvester"] = [0, 1, 0, 0, 1, 0, 0, 1, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 0, 0, 2, 0];
+				Board.CreepNumber["builder"] = [0, 0, 0, 0, 0, 0, 0, 1, 0];
+				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 0, 0, 0, 1, 0];
+				break;
+			case 7:
+				Board.CreepNumber["harvester"] = [0, 1, 0, 0, 1, 0, 0, 1, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 0, 0, 0, 1];
+				Board.CreepNumber["builder"] = [0, 0, 0, 0, 2, 0, 0, 0, 1];
+				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 0, 0, 0, 0, 1];
 				break;
 			default:
 				return Status.Failure;
@@ -612,7 +686,7 @@ class BaseActions {
 			return Status.Succeed;
 		}
 		else {
-			// console.log("Try Build Creep " + newName + " Failed code = " + returnCode);
+			console.log("Try Build Creep " + newName + " Failed code = " + returnCode);
 			return Status.Failure;
 		}
 	}

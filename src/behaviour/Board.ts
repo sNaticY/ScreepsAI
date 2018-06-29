@@ -1,6 +1,6 @@
 import { Dictionary } from "lodash";
 
-enum Strategy {
+export enum Strategy {
     Balance = 0, //anything
     ResourceWorker = 1, //Miner, Harvester, Carrier
     ResourceConstruction = 2, //Extensions
