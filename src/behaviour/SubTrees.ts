@@ -66,7 +66,7 @@ export default class SubTrees {
 				var setLv7 = this.CheckEnergyCapcityThanAdjustStrategySequence(5300, 12300, 7);
 				var setLv8 = this.CheckEnergyCapcityThanAdjustStrategySequence(12300, 99999, 8);
 			}
-			energyLevelSelecter.AddSubTree(setLv1, setLv2, setLv3, setLv4);
+			energyLevelSelecter.AddSubTree(setLv1, setLv2, setLv3, setLv4, setLv5, setLv6, setLv7, setLv8);
 		}
 		sequence.AddSubTree(new LoopSleepTicks(20, true), energyLevelSelecter)
 		return sequence;
