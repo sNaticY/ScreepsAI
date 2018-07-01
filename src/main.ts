@@ -18,28 +18,28 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
 	Board.CurrentSpawn = Game.spawns["Spawn1"];
 	
-	aiBrain.Execute();
+	aiBrain.Execute("0");
 	
-	aiConstrucion.Execute();
-	aiSpawn.Execute();
+	aiConstrucion.Execute(Board.CurrentSpawn.id);
+	aiSpawn.Execute(Board.CurrentSpawn.id);
 
 	for (var name in Game.creeps) {
 		var creep = Game.creeps[name];
 		Board.CurrentCreep = creep;
 		if (creep.memory.role == 'harvester') {
-			aiHarvester.Execute();
+			aiHarvester.Execute(creep.id);
 		}
 		else if (creep.memory.role == 'upgrader') {
-			aiUpgrader.Execute();
+			aiUpgrader.Execute(creep.id);
 		}
 		else if (creep.memory.role == 'builder') {
-			aiBuilder.Execute();
+			aiBuilder.Execute(creep.id);
 		}
 		else if(creep.memory.role == "miner") {
-			aiMiner.Execute();
+			aiMiner.Execute(creep.id);
 		}
 		else if(creep.memory.role == "carrier") {
-			aiCarrier.Execute();
+			aiCarrier.Execute(creep.id);
 		}
 	}
 

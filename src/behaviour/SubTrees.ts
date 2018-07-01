@@ -25,6 +25,8 @@ import {
 	CheckNearestFlag,
 	BuildPathFromMinFlag,
 	BuildExtensionsByPath,
+	BuildBetterCreep,
+	BuildContainerNearSource,
 } from "./Actions";
 
 import {
@@ -46,6 +48,7 @@ export default class SubTrees {
 			new CheckNearestFlag(),
 			new BuildPathFromMinFlag(),
 			new BuildExtensionsByPath(),
+			new BuildContainerNearSource(),
 		)
 
 		return sequence;
@@ -92,12 +95,7 @@ export default class SubTrees {
 				{
 					var baseLv2BuildPre = new Sequence();
 					{
-						var harvesterBuild = new Selector()
-						harvesterBuild.AddSubTree(
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 2),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 1),
-							new Result(true, null)
-						);
+						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
 						var minerBuild = this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2);
 					}
 					baseLv2BuildPre.AddSubTree(harvesterBuild, minerBuild);
@@ -114,15 +112,8 @@ export default class SubTrees {
 				{
 					var baseLv3BuildPre = new Sequence();
 					{
-						var harvesterBuild = new Selector();
-						harvesterBuild.AddSubTree(
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 3),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 2),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 1),
-							new Result(true, null)
-						);
-						var minerBuild = new Sequence();
-						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
+						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
+						var minerBuild = this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2)
 					}
 					baseLv3BuildPre.AddSubTree(harvesterBuild, minerBuild);
 
@@ -143,14 +134,7 @@ export default class SubTrees {
 				{
 					var baseLv4BuildPre = new Sequence();
 					{
-						var harvesterBuild = new Selector();
-						harvesterBuild.AddSubTree(
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 4),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 3),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 2),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 1),
-							new Result(true, null)
-						);
+						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
 						var minerBuild = new Sequence();
 						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
 					}
@@ -169,15 +153,7 @@ export default class SubTrees {
 				{
 					var baseLv5BuildPre = new Sequence();
 					{
-						var harvesterBuild = new Selector();
-						harvesterBuild.AddSubTree(
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 5),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 4),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 3),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 2),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 1),
-							new Result(true, null)
-						);
+						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
 						var minerBuild = new Sequence();
 						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
 					}
@@ -196,16 +172,7 @@ export default class SubTrees {
 				{
 					var baseLv6BuildPre = new Sequence();
 					{
-						var harvesterBuild = new Selector();
-						harvesterBuild.AddSubTree(
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 6),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 5),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 4),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 3),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 2),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 1),
-							new Result(true, null)
-						);
+						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
 						var minerBuild = new Sequence();
 						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
 					}
@@ -224,17 +191,7 @@ export default class SubTrees {
 				{
 					var baseLv7BuildPre = new Sequence();
 					{
-						var harvesterBuild = new Selector();
-						harvesterBuild.AddSubTree(
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 7),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 6),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 5),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 4),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 3),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 2),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 1),
-							new Result(true, null)
-						);
+						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
 						var minerBuild = new Sequence();
 						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
 					}
@@ -253,18 +210,7 @@ export default class SubTrees {
 				{
 					var baseLv8BuildPre = new Sequence();
 					{
-						var harvesterBuild = new Selector();
-						harvesterBuild.AddSubTree(
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 8),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 7),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 6),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 5),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 4),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 3),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 2),
-							this.CheckNumThenBuildCreepSequence("harvester", "Havester", 1),
-							new Result(true, null)
-						);
+						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
 						var minerBuild = new Sequence();
 						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
 					}
@@ -288,6 +234,7 @@ export default class SubTrees {
 	public static AIHarvester(): Tree {
 		let tree = new Selector();
 		tree.AddSubTree(
+			new MoveAndPickupEnergy(),
 			new MoveAndHarvest(),
 			new MoveAndTransferBackToSpawnAndExtension(),
 			new MoveAndBuildConstruction(),
@@ -351,6 +298,13 @@ export default class SubTrees {
 		return new Selector().AddSubTree(
 			new CheckCreepNum(role, true, level),
 			new Result(false, new BuildCreep(role, name, level))
+		);
+	}
+
+	private static CheckNumThanBuildBetterCreep(role: string, name: string): Tree {
+		return new Selector().AddSubTree(
+			new CheckCreepNum(role, true, undefined),
+			new Result(false, new BuildBetterCreep(role, name))
 		);
 	}
 
