@@ -237,6 +237,7 @@ export default class SubTrees {
 		let tree = new Selector();
 		tree.AddSubTree(
 			new MoveAndPickupEnergy(),
+			new MoveAndWithdrawEnergyFromContainer(),
 			new MoveAndHarvest(),
 			new MoveAndTransferBackToSpawnAndExtension(),
 			new MoveAndBuildConstruction(),
