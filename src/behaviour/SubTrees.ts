@@ -27,6 +27,7 @@ import {
 	BuildExtensionsByPath,
 	BuildBetterCreep,
 	BuildContainerNearSource,
+	BuildStorageNearController,
 } from "./Actions";
 
 import {
@@ -49,6 +50,7 @@ export default class SubTrees {
 			new BuildPathFromMinFlag(),
 			new BuildExtensionsByPath(),
 			new BuildContainerNearSource(),
+			new BuildStorageNearController(),
 		)
 
 		return sequence;
@@ -220,7 +222,7 @@ export default class SubTrees {
 					baseLv8Build.AddSubTree(
 						this.CheckNumThenBuildCreepSequence("carrier", "Carrier", 8),
 						this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 8),
-						this.CheckNumThenBuildCreepSequence("builder", "Builder", 8)
+						this.CheckNumThenBuildCreepSequence("builder", "Builder", 8),
 					);
 				}
 				baseLv8.AddSubTree(new CheckTotalEnergy(5301, 99999999), baseLv8BuildPre, baseLv8Build)
