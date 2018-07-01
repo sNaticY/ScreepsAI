@@ -102,6 +102,7 @@ export class CheckNearestFlag extends Tree {
 						this.minPathX = this.x;
 						this.minPathY = this.y;
 					}
+
 					// console.log("x = ", this.x, " y = ", this.y, " length = ", totalLength, "minPath", this.minPath, "minX", this.minPathX, "minY", this.minPathY);
 					i++;
 				}
@@ -126,7 +127,7 @@ export class CheckNearestFlag extends Tree {
 	}
 }
 
-export class BuildPathFromMinFlag extends Tree {
+export class BuildRoadFromMinFlag extends Tree {
 	Execute(id: string): Status {
 		var room = Board.CurrentSpawn.room;
 		if (room.memory.hasRoadBuild) {
@@ -134,6 +135,12 @@ export class BuildPathFromMinFlag extends Tree {
 		}
 		var flag = Game.flags["MinFlag"];
 		if (!flag) return this.ReturnState(Status.Failure, id);
+		BuildHelper.BuildAllStructureNearPos(Board.CurrentSpawn.pos, 1, STRUCTURE_ROAD, (pos): boolean => {
+			return true;
+		});
+		BuildHelper.BuildAllStructureNearPos(flag.pos, 0, STRUCTURE_ROAD, (pos): boolean => {
+			return true;
+		});
 		var path: PathStep[] = [];
 		room.memory.extensionPos = [];
 		room.memory.extensionFindRange = [1, 1, 1];
@@ -142,6 +149,9 @@ export class BuildPathFromMinFlag extends Tree {
 			var pos = room.getPositionAt(controllerPath[Math.ceil(controllerPath.length / 2)].x, controllerPath[Math.ceil(controllerPath.length / 2)].y);
 			if (pos) { room.memory.extensionPos.push(pos); }
 			path.push(...controllerPath)
+			BuildHelper.BuildAllStructureNearPos(room.controller.pos, 1, STRUCTURE_ROAD, (pos): boolean => {
+				return true;
+			});
 		}
 		path.push(...room.findPath(flag.pos, Board.CurrentSpawn.pos, { ignoreCreeps: true, plainCost: 1, swampCost: 1 }))
 		var sources = room.find(FIND_SOURCES)
@@ -151,6 +161,9 @@ export class BuildPathFromMinFlag extends Tree {
 			var pos = room.getPositionAt(sourcePath[Math.ceil(sourcePath.length / 2)].x, sourcePath[Math.ceil(sourcePath.length / 2)].y);
 			if (pos) { room.memory.extensionPos.push(pos); }
 			path.push(...sourcePath)
+			BuildHelper.BuildAllStructureNearPos(element.pos, 1, STRUCTURE_ROAD, (pos): boolean => {
+				return true;
+			});
 		}
 		BuildHelper.BuildRoad(path, room);
 		room.memory.hasRoadBuild = true;
@@ -181,7 +194,13 @@ export class BuildExtensionsByPath extends Tree {
 			}
 			var posIndex = random(0, 2)
 			for (let i = extensions.length + extensionSites.length; i < extensionCount;) {
-				var result = BuildHelper.BuildExtensionNearPos(room.memory.extensionPos[posIndex], room.memory.extensionFindRange[posIndex])
+				var result = BuildHelper.BuildOneStructureNearPos(room.memory.extensionPos[posIndex], room.memory.extensionFindRange[posIndex], STRUCTURE_EXTENSION, (pos): boolean => {
+					return pos && Math.abs(pos.x - pos.y) % 2 == 0 &&
+						pos.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 &&
+						pos.lookFor(LOOK_STRUCTURES).length == 0 &&
+						Game.map.getTerrainAt(pos.x, pos.y, room.name) != "wall" &&
+						pos.findInRange(FIND_SOURCES, 2).length == 0
+				})
 				if (result == 0) {
 					i++;
 					posIndex = random(0, 2)
@@ -205,7 +224,14 @@ export class BuildContainerNearSource extends Tree {
 		var containerSites = room.find(FIND_CONSTRUCTION_SITES, { filter: (s) => s.structureType == STRUCTURE_CONTAINER });
 		for (let i = containers.length + containerSites.length; i < sources.length; i++) {
 			const source = sources[i];
-			var result = BuildHelper.BuildContainerNearPos(source.pos);
+			var result = BuildHelper.BuildOneStructureNearPos(source.pos, 1, STRUCTURE_CONTAINER, (pos): boolean => {
+				if (pos) {
+					var structures = pos.lookFor(LOOK_STRUCTURES);
+					return Game.map.getTerrainAt(pos.x, pos.y, room.name) != "wall" &&
+						(structures.length == 0 || (structures.length == 1 && structures[0].structureType == STRUCTURE_ROAD))
+				}
+				return false;
+			});
 			if (result != 0) {
 				console.log("Can not find position to build container");
 				return this.ReturnState(Status.Failure, id);
@@ -213,7 +239,20 @@ export class BuildContainerNearSource extends Tree {
 		}
 		return this.ReturnState(Status.Succeed, id);
 	}
+}
 
+export class TowerAttackClosest extends Tree {
+	Execute(id: string): Status {
+		var tower = Board.CurrentTower;
+		var closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+		if (closestHostile) {
+			var result = tower.attack(closestHostile);
+			if (result == 0) {
+				return this.ReturnState(Status.Succeed, id);
+			}
+		}
+		return this.ReturnState(Status.Failure, id);
+	}
 }
 
 export class BuildStorageNearController extends Tree {
@@ -224,12 +263,36 @@ export class BuildStorageNearController extends Tree {
 			var storages = room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType == STRUCTURE_STORAGE });
 			var storageSites = room.find(FIND_CONSTRUCTION_SITES, { filter: (s) => s.structureType == STRUCTURE_STORAGE });
 			for (let i = storages.length + storageSites.length; i < 1; i++) {
-				var result = BuildHelper.BuildStorageNearPos(controller.pos, 2);
+				var result = BuildHelper.BuildOneStructureNearPos(controller.pos, 3, STRUCTURE_STORAGE, (pos): boolean => {
+					return pos && Math.abs(pos.x - pos.y) % 2 == 0 &&
+						Game.map.getTerrainAt(pos.x, pos.y, room.name) != "wall" &&
+						pos.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 &&
+						pos.lookFor(LOOK_STRUCTURES).length == 0;
+				});
 				if (result != 0) {
 					console.log("Can not find position to build storage");
 					return this.ReturnState(Status.Failure, id);
 				}
 			}
+		}
+		return this.ReturnState(Status.Succeed, id);
+	}
+}
+
+export class BuildTowerInMiddle extends Tree {
+	Execute(id: string): Status {
+		var room = Board.CurrentSpawn.room;
+		var minFlag = Game.flags["MinFlag"];
+		var path = room.findPath(Board.CurrentSpawn.pos, minFlag.pos);
+		var middlePath = path[Math.floor(path.length / 2)];
+		var middlePos = room.getPositionAt(middlePath.x, middlePath.y);
+		if (middlePos) {
+			var result = BuildHelper.BuildOneStructureNearPos(middlePos, 4, STRUCTURE_TOWER, (pos): boolean => {
+				return pos && Math.abs(pos.x - pos.y) % 2 == 0 &&
+					Game.map.getTerrainAt(pos.x, pos.y, room.name) != "wall" &&
+					pos.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 &&
+					pos.lookFor(LOOK_STRUCTURES).length == 0;
+			})
 		}
 		return this.ReturnState(Status.Succeed, id);
 	}
@@ -266,16 +329,16 @@ export class BuildBetterCreep extends Tree {
 		for (var cr of creeps) {
 			if (cr.memory.level > maxLevel) {
 				maxLevel = cr.memory.level;
-				if (maxLevel == 8 || maxLevel == Board.EnconemyLevel) {
-					return this.ReturnState(Status.Succeed, id);
-				}
 			}
 		}
-		for (let i = 8; i > maxLevel; i--) {
+		for (let i = Board.EnconemyLevel; i > maxLevel; i--) {
 			var result = BaseActions.BuildCreep(this.role, this.name, i);
 			if (result == 0) {
 				return this.ReturnState(result, id);
 			}
+		}
+		if (Board.EnconemyLevel == maxLevel) {
+			var result = BaseActions.BuildCreep(this.role, this.name, maxLevel);
 		}
 		return this.ReturnState(Status.Failure, id);
 	}
@@ -304,7 +367,7 @@ export class CheckCreepNum extends Tree {
 			creepsNumber = BaseActions.GetCreepNumberIgnoreLevel(this.role);
 			targetNumber = Board.CreepNumber[this.role][0];
 		}
-		console.log("Need Role", this.role, "\t[ level", this.level, "]", targetNumber, "\thave", creepsNumber)
+		// console.log("Need Role", this.role, "\t[ level", this.level, "]", targetNumber, "\thave", creepsNumber)
 		if (creepsNumber < targetNumber) {
 			return this.isTrue ? this.ReturnState(Status.Failure, id) : this.ReturnState(Status.Succeed, id);
 		}
@@ -325,20 +388,17 @@ export class MoveAndHarvest extends Tree {
 		if (targets.length > 0) {
 			var target = targets[creep.memory.harvestIndex % 2 == 0 ? 0 : 1];
 			var result = creep.harvest(target);
-			if (result == ERR_NOT_IN_RANGE) {
-				if (creep.memory.role == "miner") {
-					var container = target.pos.findInRange<Structure>(FIND_STRUCTURES, 2, { filter: (s) => s.structureType == STRUCTURE_CONTAINER });
-					if (container.length > 0) {
-						creep.moveTo(container[0].pos, { visualizePathStyle: { stroke: '#ffaa00' } });
-					}
-					else {
-						creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
-					}
+			if (creep.memory.role == "miner") {
+				var container = target.pos.findInRange<Structure>(FIND_STRUCTURES, 2, { filter: (s) => s.structureType == STRUCTURE_CONTAINER });
+				if (container.length > 0) {
+					creep.moveTo(container[0].pos, { visualizePathStyle: { stroke: '#ffaa00' } });
 				}
 				else {
-
 					creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
 				}
+			}
+			else if (result == ERR_NOT_IN_RANGE) {
+				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
 			}
 			else if (result != 0) {
 				// console.log("MoveAndHarvest Failed", result)
@@ -352,7 +412,7 @@ export class MoveAndHarvest extends Tree {
 	}
 }
 
-export class MoveAndTransferBackToSpawnAndExtension extends Tree {
+export class MoveAndTransferEnergyToSpawn extends Tree {
 	public Execute(id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
@@ -361,8 +421,8 @@ export class MoveAndTransferBackToSpawnAndExtension extends Tree {
 
 		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
 			filter: (structure) => {
-				return (((structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_EXTENSION) &&
-					structure.energy < structure.energyCapacity));
+				return (structure.structureType == STRUCTURE_SPAWN &&
+					structure.energy < structure.energyCapacity);
 			}
 		});
 
@@ -378,8 +438,37 @@ export class MoveAndTransferBackToSpawnAndExtension extends Tree {
 			creep.say('🔄 Transfering');
 			return this.ReturnState(Status.Running, id);
 		}
-		else {
-			creep.memory.fromContainer = false;
+
+		// console.log("MoveAndTransferBackToSpawnAndExtension Failed, Didn't find target to transfer")
+		return this.ReturnState(Status.Failure, id);
+	}
+}
+
+export class MoveAndTransferEnergyToExtension extends Tree {
+	public Execute(id: string): Status {
+		var creep = Board.CurrentCreep;
+		if (creep.carry.energy == 0) {
+			return this.ReturnState(Status.Failure, id);
+		}
+
+		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+			filter: (structure) => {
+				return (structure.structureType == STRUCTURE_EXTENSION &&
+					structure.energy < structure.energyCapacity);
+			}
+		});
+
+		if (target) {
+			var result = creep.transfer(target, RESOURCE_ENERGY);
+			if (result == ERR_NOT_IN_RANGE) {
+				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
+			}
+			else if (result != 0) {
+				// console.log("MoveAndTransferBackToSpawnAndExtension Failed", result)
+				return this.ReturnState(Status.Failure, id);
+			}
+			creep.say('🔄 Transfering');
+			return this.ReturnState(Status.Running, id);
 		}
 
 		// console.log("MoveAndTransferBackToSpawnAndExtension Failed, Didn't find target to transfer")
@@ -387,13 +476,41 @@ export class MoveAndTransferBackToSpawnAndExtension extends Tree {
 	}
 }
 
-export class MoveAndTransferBackToSpawnOrExtensionOrContainer extends Tree {
+export class MoveAndTransferEnergyToTower extends Tree {
 	public Execute(id: string): Status {
 		var creep = Board.CurrentCreep;
-		if (creep.memory.fromContainer) {
-			// console.log("creep.memory.fromContainer")
+		if (creep.carry.energy == 0) {
 			return this.ReturnState(Status.Failure, id);
 		}
+
+		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+			filter: (structure) => {
+				return (structure.structureType == STRUCTURE_TOWER &&
+					structure.energy < structure.energyCapacity);
+			}
+		});
+
+		if (target) {
+			var result = creep.transfer(target, RESOURCE_ENERGY);
+			if (result == ERR_NOT_IN_RANGE) {
+				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
+			}
+			else if (result != 0) {
+				// console.log("MoveAndTransferBackToSpawnAndExtension Failed", result)
+				return this.ReturnState(Status.Failure, id);
+			}
+			creep.say('🔄 Transfering');
+			return this.ReturnState(Status.Running, id);
+		}
+
+		// console.log("MoveAndTransferBackToSpawnAndExtension Failed, Didn't find target to transfer")
+		return this.ReturnState(Status.Failure, id);
+	}
+}
+
+export class MoveAndTransferEnergyToStorage extends Tree {
+	public Execute(id: string): Status {
+		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
 			// creep.say('🔄 harvest');
 			return this.ReturnState(Status.Failure, id);
@@ -404,8 +521,7 @@ export class MoveAndTransferBackToSpawnOrExtensionOrContainer extends Tree {
 		}
 		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
 			filter: (structure) => {
-				return (((structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN) &&
-					structure.energy < structure.energyCapacity) || (structure.structureType == STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] < structure.storeCapacity));
+				return ((structure.structureType == STRUCTURE_STORAGE && structure.store[RESOURCE_ENERGY] < structure.storeCapacity));
 			}
 		});
 
@@ -427,6 +543,19 @@ export class MoveAndTransferBackToSpawnOrExtensionOrContainer extends Tree {
 	}
 }
 
+export class CheckCreepEnergy extends Tree {
+	ifFull: boolean;
+	constructor(ifFull: boolean) {
+		super();
+		this.ifFull = ifFull;
+	}
+	public Execute(id: string): Status {
+		var result = Board.CurrentCreep.carry.energy == Board.CurrentCreep.carryCapacity;
+		return this.ifFull ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id)
+	}
+}
+
+// Going Pickup returns running, finish returns true, other issue returns false
 export class MoveAndPickupEnergy extends Tree {
 	public Execute(id: string): Status {
 		var creep = Board.CurrentCreep;
@@ -435,16 +564,13 @@ export class MoveAndPickupEnergy extends Tree {
 		}
 		const target = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {
 			filter: (resource) => {
-				return resource.resourceType == RESOURCE_ENERGY && resource.amount >= 600
+				return resource.resourceType == RESOURCE_ENERGY && resource.amount >= creep.carryCapacity
 			}
 		});
 		if (target) {
 			var result = creep.pickup(target);
 			if (result == ERR_NOT_IN_RANGE) {
 				creep.moveTo(target);
-			}
-			else if (result == 0) {
-				creep.memory.fromContainer = false;
 			}
 			else {
 				// console.log("MoveAndPickupEnergy Failed", result)
@@ -462,7 +588,6 @@ export class MoveAndWithdrawEnergyFromContainer extends Tree {
 	public Execute(id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy >= creep.carryCapacity) {
-
 			return this.ReturnState(Status.Failure, id);
 		}
 
@@ -475,9 +600,6 @@ export class MoveAndWithdrawEnergyFromContainer extends Tree {
 
 		if (target) {
 			var result = creep.withdraw(target, RESOURCE_ENERGY);
-			if (result == 0) {
-				creep.memory.fromContainer = true;
-			}
 			if (result == ERR_NOT_IN_RANGE) {
 				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
 			}
@@ -489,6 +611,34 @@ export class MoveAndWithdrawEnergyFromContainer extends Tree {
 			return this.ReturnState(Status.Running, id);
 		}
 		// console.log("MoveAndHarvest Failed, Didn't find target to Harvest")
+		return this.ReturnState(Status.Failure, id);
+	}
+}
+
+
+export class WithdrawNearestEnergy extends Tree {
+	Execute(id:string):Status {
+		var creep = Board.CurrentCreep;
+		if (creep.carry.energy >= creep.carryCapacity) {
+			return this.ReturnState(Status.Failure, id);
+		}
+		var target = creep.pos.findClosestByPath<FIND_STRUCTURES>(FIND_STRUCTURES, {filter: (s) => {
+			return ((s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_SPAWN ) && s.energy > 0) ||
+					( s.structureType == STRUCTURE_CONTAINER || s.structureType == STRUCTURE_STORAGE ) && s.store.energy > 0
+		}})
+
+		if (target) {
+			var result = creep.withdraw(target, RESOURCE_ENERGY);
+			if (result == ERR_NOT_IN_RANGE) {
+				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
+			}
+			else if (result != 0) {
+				// console.log("MoveAndHarvest Failed", result)
+				return this.ReturnState(Status.Failure, id);
+			}
+			creep.say('🔄 Withdrawing');
+			return this.ReturnState(Status.Running, id);
+		}
 		return this.ReturnState(Status.Failure, id);
 	}
 }
@@ -506,9 +656,9 @@ export class MoveAndUpgradeController extends Tree {
 		}
 
 		if (creep.room.controller) {
-			if (creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
-				creep.moveTo(creep.room.controller, { visualizePathStyle: { stroke: '#ffffff' } });
-			}
+			creep.upgradeController(creep.room.controller)
+			creep.moveTo(BaseActions.RandomPosNearTarget(creep.room.controller.pos, creep.room), { visualizePathStyle: { stroke: '#ffffff' } });
+
 			creep.say('🔄 Upgrading');
 			return this.ReturnState(Status.Running, id);
 		}
@@ -561,18 +711,18 @@ export class MoveAndBuildConstruction extends Tree {
 
 		var target = creep.pos.findClosestByRange<FIND_CONSTRUCTION_SITES>(FIND_CONSTRUCTION_SITES, { filter: (s) => s.structureType == STRUCTURE_EXTENSION });
 		if (target) {
-			if (creep.build(target) == ERR_NOT_IN_RANGE) {
-				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
-			}
+			creep.build(target)
+			creep.moveTo(BaseActions.RandomPosNearTarget(target.pos, creep.room), { visualizePathStyle: { stroke: '#ffffff' } });
+
 			creep.say('🔄 Building');
 			return this.ReturnState(Status.Running, id);
 		}
 		else {
 			var target = creep.pos.findClosestByRange<FIND_CONSTRUCTION_SITES>(FIND_CONSTRUCTION_SITES);
 			if (target) {
-				if (creep.build(target) == ERR_NOT_IN_RANGE) {
-					creep.moveTo(target, { visualizePathStyle: { stroke: '#ffffff' } });
-				}
+				creep.build(target)
+				creep.moveTo(BaseActions.RandomPosNearTarget(target.pos, creep.room), { visualizePathStyle: { stroke: '#ffffff' } });
+
 				creep.say('🔄 building');
 				return this.ReturnState(Status.Running, id);
 			}
@@ -599,9 +749,9 @@ export class MoveAndRepairConstruction extends Tree {
 		targets.sort((a, b) => a.hits - b.hits);
 
 		if (targets.length > 0) {
-			if (creep.repair(targets[0]) == ERR_NOT_IN_RANGE) {
-				creep.moveTo(targets[0]);
-			}
+			creep.repair(targets[0])
+			creep.moveTo(BaseActions.RandomPosNearTarget(targets[0].pos, creep.room));
+
 			creep.say('🔄 Repairing');
 			return this.ReturnState(Status.Running, id);
 		}
@@ -630,6 +780,33 @@ export class CheckTotalEnergy extends Tree {
 		return this.ReturnState(Status.Failure, id);
 	}
 }
+
+export class CheckUseableEnergy extends Tree {
+	ifEqual: boolean;
+
+	constructor(ifEqual: boolean) {
+		super();
+		this.ifEqual = ifEqual;
+	}
+	Execute(id: string): Status {
+		var result = Board.CurrentRoom.energyAvailable == Board.CurrentRoom.energyCapacityAvailable;
+		return this.ifEqual ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id);
+	}
+}
+
+export class CheckBackupEnergy extends Tree {
+	ifEqual: boolean;
+
+	constructor(ifEqual: boolean) {
+		super();
+		this.ifEqual = ifEqual;
+	}
+
+	Execute(id: string): Status {
+		throw new Error("Method not implemented.");
+	}
+}
+
 
 export class CheckEnergyCapcity extends Tree {
 	low: number;
@@ -681,38 +858,38 @@ export class AdjustStrategy extends Tree {
 	}
 	public Execute(id: string): Status {
 		Board.EnconemyLevel = this.level;
-		console.log("SetLevel = ", Board.EnconemyLevel, "Current Energy = ", Board.CurrentSpawn.room.energyAvailable)
+		// console.log("SetLevel = ", Board.EnconemyLevel, "Current Energy = ", Board.CurrentSpawn.room.energyAvailable)
 		switch (Board.EnconemyLevel) {
 			case 1:
-				Board.CreepNumber["harvester"] = [1, 1, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [7, 1, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["upgrader"] = [0, 1, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 1, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 				break;
 			case 2:
-				Board.CreepNumber["harvester"] = [1, 0, 1, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [6, 0, 1, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["upgrader"] = [0, 0, 1, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 1, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 0, 0, 0, 0, 0];
 				break;
 			case 3:
-				Board.CreepNumber["harvester"] = [1, 0, 0, 1, 0, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [5, 0, 0, 1, 0, 0, 0, 0, 0];
 				Board.CreepNumber["upgrader"] = [0, 0, 0, 1, 0, 0, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 0, 1, 0, 0, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 1, 0, 0, 0, 0, 0];
 				break;
 			case 4:
-				Board.CreepNumber["harvester"] = [1, 0, 0, 0, 1, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [4, 0, 0, 0, 1, 0, 0, 0, 0];
 				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 				break;
 			case 5:
-				Board.CreepNumber["harvester"] = [1, 0, 0, 0, 0, 1, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [3, 0, 0, 0, 0, 1, 0, 0, 0];
 				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 1, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 0, 0, 0, 1, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
@@ -749,6 +926,7 @@ export class AdjustStrategy extends Tree {
 class BaseActions {
 	public static BuildCreep(role: string, name: string, level: number): Status {
 		var newName = "LV" + level + "-" + name + "-" + Game.time;
+		// console.log("Try Build Creep " + newName);
 		var returnCode = BuildHelper.BuildCreep(role, level, Board.CurrentSpawn, newName);
 		if (returnCode == 0) {
 			return Status.Succeed;
@@ -779,6 +957,18 @@ class BaseActions {
 			}
 		}
 		return creeps.length - deadNumber;
+	}
+
+	public static RandomPosNearTarget(target: RoomPosition, room: Room): RoomPosition {
+		while (true) {
+			var offsetX = random(-3, 3);
+			var offsetY = random(-3, 3);
+			var roomPos = room.getPositionAt(target.x + offsetX, target.y + offsetY);
+			if (roomPos && Game.map.getTerrainAt(roomPos.x, roomPos.y, room.name) != "wall") {
+				return roomPos;
+			}
+		}
+
 	}
 }
 

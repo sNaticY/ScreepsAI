@@ -8,7 +8,6 @@ import {
 	LoopSleepTicks,
 	CheckCreepNum,
 	MoveAndHarvest,
-	MoveAndTransferBackToSpawnAndExtension,
 	NothingToDoWarning,
 	MoveAndUpgradeController,
 	MoveAndBuildConstruction,
@@ -18,16 +17,24 @@ import {
 	MoveAndPickupEnergy,
 	MoveAndWithdrawEnergyFormExtensions,
 	MoveAndWithdrawEnergyFromContainer,
-	MoveAndTransferBackToSpawnOrExtensionOrContainer,
+	MoveAndTransferEnergyToSpawn,
+	MoveAndTransferEnergyToExtension,
+	MoveAndTransferEnergyToTower,
+	MoveAndTransferEnergyToStorage,
 	AdjustStrategy,
 	LogAction,
 	BuildCreep,
 	CheckNearestFlag,
-	BuildPathFromMinFlag,
+	BuildRoadFromMinFlag,
 	BuildExtensionsByPath,
 	BuildBetterCreep,
 	BuildContainerNearSource,
 	BuildStorageNearController,
+	BuildTowerInMiddle,
+	TowerAttackClosest,
+	CheckUseableEnergy,
+	CheckCreepEnergy,
+	CheckBackupEnergy,
 } from "./Actions";
 
 import {
@@ -47,9 +54,10 @@ export default class SubTrees {
 		var sequence = new Sequence();
 		sequence.AddSubTree(
 			new CheckNearestFlag(),
-			new BuildPathFromMinFlag(),
+			new BuildRoadFromMinFlag(),
 			new BuildExtensionsByPath(),
 			new BuildContainerNearSource(),
+			new BuildTowerInMiddle(),
 			new BuildStorageNearController(),
 		)
 
@@ -77,6 +85,13 @@ export default class SubTrees {
 		return sequence;
 	}
 
+	public static AITower(): Tree {
+		var selector = new Selector().AddSubTree(
+			new TowerAttackClosest()
+		);
+		return selector;
+	}
+
 	public static AISpawn(): Tree {
 		var sequence = new Sequence();
 		{
@@ -91,7 +106,7 @@ export default class SubTrees {
 						this.CheckNumThenBuildCreepSequence("builder", "Builder", 1)
 					);
 				}
-				baseLv1.AddSubTree(new CheckTotalEnergy(0, 301), baseLv1Build, new Result(true, null));
+				baseLv1.AddSubTree(new CheckTotalEnergy(0, 301), this.CheckNumThanBuildBetterCreep("harvester", "Havester"), baseLv1Build, new Result(true, null));
 
 				var baseLv2 = new Sequence();
 				{
@@ -239,7 +254,9 @@ export default class SubTrees {
 			new MoveAndPickupEnergy(),
 			new MoveAndWithdrawEnergyFromContainer(),
 			new MoveAndHarvest(),
-			new MoveAndTransferBackToSpawnAndExtension(),
+			new MoveAndTransferEnergyToSpawn(),
+			new MoveAndTransferEnergyToExtension(),
+			new MoveAndTransferEnergyToStorage(),
 			new MoveAndBuildConstruction(),
 			new MoveAndUpgradeController(),
 			new NothingToDoWarning()
@@ -253,7 +270,8 @@ export default class SubTrees {
 			new MoveAndWithdrawEnergyFormExtensions(),
 			new MoveAndHarvest(),
 			new MoveAndUpgradeController(),
-			new MoveAndTransferBackToSpawnAndExtension(),
+			new MoveAndTransferEnergyToSpawn(),
+			new MoveAndTransferEnergyToExtension(),
 			new NothingToDoWarning()
 		);
 		return tree;
@@ -264,6 +282,7 @@ export default class SubTrees {
 		tree.AddSubTree(
 			new MoveAndWithdrawEnergyFormExtensions(),
 			new MoveAndHarvest(),
+			new MoveAndTransferEnergyToTower(),
 			new MoveAndBuildConstruction(),
 			new MoveAndRepairConstruction(),
 			new MoveAndUpgradeController(),
@@ -281,12 +300,13 @@ export default class SubTrees {
 	public static AICarrier(): Tree {
 		let tree = new Selector();
 		{
-			var fromGround = new Selector();
-			fromGround.AddSubTree(new MoveAndPickupEnergy(), new MoveAndTransferBackToSpawnOrExtensionOrContainer())
-			var fromExtension = new Selector();
-			fromExtension.AddSubTree(new MoveAndWithdrawEnergyFromContainer(), new MoveAndTransferBackToSpawnAndExtension());
+			new MoveAndPickupEnergy(), 
+			new MoveAndWithdrawEnergyFromContainer(), 
+			new MoveAndTransferEnergyToSpawn(),
+			new MoveAndTransferEnergyToExtension(),
+			new MoveAndTransferEnergyToStorage(),
+			new NothingToDoWarning()
 		}
-		tree.AddSubTree(fromGround, fromExtension, new NothingToDoWarning());
 		return tree;
 	}
 
@@ -318,4 +338,40 @@ export default class SubTrees {
 		)
 	}
 
+	private static TryStoreUseableEnergySequence(): Tree {
+		return new Sequence().AddSubTree(
+			new CheckUseableEnergy(false),
+			new Selector().AddSubTree(
+				new Sequence().AddSubTree(
+					new CheckCreepEnergy(false),
+					new Selector().AddSubTree(
+						new MoveAndPickupEnergy(),
+						new MoveAndWithdrawEnergyFromContainer(),
+					),
+				),
+				new Selector().AddSubTree(
+					new MoveAndTransferEnergyToSpawn(),
+					new MoveAndTransferEnergyToExtension(),
+				)
+			)
+		)
+	}
+
+	private static TryStoreBackupEnergySequence(): Tree {
+		return new Sequence().AddSubTree(
+			new CheckBackupEnergy(false),
+			new Selector().AddSubTree(
+				new Sequence().AddSubTree(
+					new CheckCreepEnergy(false),
+					new Selector().AddSubTree(
+						new MoveAndPickupEnergy(),
+						new MoveAndWithdrawEnergyFromContainer(),
+					),
+				),
+				new Selector().AddSubTree(
+					new MoveAndTransferEnergyToStorage(),
+				)
+			)
+		)
+	}
 }

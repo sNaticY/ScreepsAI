@@ -10,7 +10,9 @@ export enum Strategy {
 }
 
 export default class Board {
+    static CurrentRoom: Room
     static CurrentCreep: Creep
+    static CurrentTower: StructureTower
     static CurrentSpawn: StructureSpawn
 
     static CreepNumber: Dictionary<Array<number>> = {

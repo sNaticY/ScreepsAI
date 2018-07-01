@@ -27,6 +27,12 @@ export default abstract class Tree implements TreeNode {
         return state;
     }
 
+    protected ReturnStateBoolean(state: Boolean, id:string): Status{
+        var result = state?Status.Succeed:Status.Failure;
+        this.State[id] = result;
+        return result;
+    }
+
     public ClearStates() {
         var newStates: Dictionary<Status> = {};
         for (const index in this.State) {

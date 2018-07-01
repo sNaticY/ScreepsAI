@@ -1,6 +1,11 @@
 import Board from "behaviour/Board";
 import { random, List, Dictionary } from "lodash";
 
+
+interface PosFilter {
+    (pos:RoomPosition): boolean;
+}
+
 const BodyParts: Dictionary<List<BodyPartConstant[]>> = {
     worker: [
         [],
@@ -105,10 +110,11 @@ export class BuildHelper {
             var result = spawn.spawnCreep(BodyParts["worker"][level], name, { memory: BuildHelper.GenScreepsMemory(role, level) });
             return result;
         }
-        if (role == "miner") {
+        var result = spawn.spawnCreep(BodyParts[role][level], name, { memory: BuildHelper.GenScreepsMemory(role, level) });
+
+        if (result == 0 && role == "miner") {
             Board.MinerIndex++;
         }
-        var result = spawn.spawnCreep(BodyParts[role][level], name, { memory: BuildHelper.GenScreepsMemory(role, level) });
         return result;
     }
 
@@ -127,111 +133,41 @@ export class BuildHelper {
         else {
             minerIndex = random(0, 1);
         }
-        return { role: role, fromContainer: false, harvestIndex: minerIndex, level: level };
+        return { role: role, harvestIndex: minerIndex, level: level };
     }
 
-    public static BuildExtensionNearPos(originPos: RoomPosition, range: number): ScreepsReturnCode {
-        var room = Board.CurrentSpawn.room;
+    public static BuildOneStructureNearPos(originPos: RoomPosition, range: number, type: BuildableStructureConstant, filter: PosFilter): ScreepsReturnCode {
+        var room = Board.CurrentRoom;
         var pos: RoomPosition | undefined;
         for (let i = range * -1; i < range; i++) {
             var pos1 = room.getPositionAt(originPos.x + i, originPos.y - range);
-            if (pos1 && Math.abs(pos1.x - pos1.y) % 2 == 0 && pos1.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 && pos1.lookFor(LOOK_STRUCTURES).length == 0 && Game.map.getTerrainAt(pos1.x, pos1.y, room.name) != "wall") {
-                pos = pos1;
-                break;
-            }
+            if(pos1 && filter(pos1)) { pos = pos1; break; }
             var pos2 = room.getPositionAt(originPos.x + i, originPos.y + range);
-            if (pos2 && Math.abs(pos2.x - pos2.y) % 2 == 0 && pos2.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 && pos2.lookFor(LOOK_STRUCTURES).length == 0 && Game.map.getTerrainAt(pos2.x, pos2.y, room.name) != "wall") {
-                pos = pos2;
-                break;
-            }
+            if(pos2 && filter(pos2)) { pos = pos2; break; }
             var pos3 = room.getPositionAt(originPos.x - range, originPos.y + i);
-            if (pos3 && Math.abs(pos3.x - pos3.y) % 2 == 0 && pos3.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 && pos3.lookFor(LOOK_STRUCTURES).length == 0 && Game.map.getTerrainAt(pos3.x, pos3.y, room.name) != "wall") {
-                pos = pos3;
-                break;
-            }
+            if(pos3 && filter(pos3)) { pos = pos3; break; }
             var pos4 = room.getPositionAt(originPos.x + range, originPos.y + i);
-            if (pos4 && Math.abs(pos4.x - pos4.y) % 2 == 0 && pos4.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 && pos4.lookFor(LOOK_STRUCTURES).length == 0 && Game.map.getTerrainAt(pos4.x, pos4.y, room.name) != "wall") {
-                pos = pos4;
-                break;
-            }
+            if(pos4 && filter(pos4)) { pos = pos4; break; }
         }
         if (pos) {
-            var result = room.createConstructionSite(pos.x, pos.y, STRUCTURE_EXTENSION);
+            var result = room.createConstructionSite(pos.x, pos.y, type);
             return result;
         }
         return -9;
     }
 
-    public static BuildContainerNearPos(originPos: RoomPosition): ScreepsReturnCode {
-        var room = Board.CurrentSpawn.room;
-        var pos: RoomPosition | undefined;
-        for (let j = -1; j < 1; j++) {
-            var pos1 = room.getPositionAt(originPos.x + j, originPos.y - 1);
-            if (pos1) {
-                var structures = pos1.lookFor(LOOK_STRUCTURES);
-                if (Game.map.getTerrainAt(pos1.x, pos1.y, room.name) != "wall" && (structures.length == 0 || (structures.length == 1 && structures[0].structureType == STRUCTURE_ROAD))) {
-                    pos = pos1;
-                }
-            }
-            var pos2 = room.getPositionAt(originPos.x + j, originPos.y + 1);
-            if (pos2) {
-                var structures = pos2.lookFor(LOOK_STRUCTURES);
-                if (Game.map.getTerrainAt(pos2.x, pos2.y, room.name) != "wall" && (structures.length == 0 || (structures.length == 1 && structures[0].structureType == STRUCTURE_ROAD))) {
-                    pos = pos2;
-                }
-            }
-            var pos3 = room.getPositionAt(originPos.x - 1, originPos.y + j);
-            if (pos3) {
-                var structures = pos3.lookFor(LOOK_STRUCTURES);
-                if (Game.map.getTerrainAt(pos3.x, pos3.y, room.name) != "wall" && (structures.length == 0 || (structures.length == 1 && structures[0].structureType == STRUCTURE_ROAD))) {
-                    pos = pos3;
-                }
-            }
-            var pos4 = room.getPositionAt(originPos.x + 1, originPos.y + j);
-            if (pos4) {
-                var structures = pos4.lookFor(LOOK_STRUCTURES);
-                if (Game.map.getTerrainAt(pos4.x, pos4.y, room.name) != "wall" && (structures.length == 0 || (structures.length == 1 && structures[0].structureType == STRUCTURE_ROAD))) {
-                    pos = pos4;
-                }
-            }
-        }
-        if (pos) {
-            var result = room.createConstructionSite(pos.x, pos.y, STRUCTURE_CONTAINER);
-            return result;
-        }
-        return -9;
-    }
-
-    public static BuildStorageNearPos(originPos: RoomPosition, range: number): ScreepsReturnCode {
-        var room = Board.CurrentSpawn.room;
-        var pos: RoomPosition | undefined;
+    public static BuildAllStructureNearPos(originPos: RoomPosition, range: number, type: BuildableStructureConstant, filter: PosFilter) {
+        var room = Board.CurrentRoom;
         for (let i = range * -1; i < range; i++) {
             var pos1 = room.getPositionAt(originPos.x + i, originPos.y - range);
-            if (pos1 && Math.abs(pos1.x - pos1.y) % 2 == 0 && pos1.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 && pos1.lookFor(LOOK_STRUCTURES).length == 0 && Game.map.getTerrainAt(pos1.x, pos1.y, room.name) != "wall") {
-                pos = pos1;
-                break;
-            }
+            if(pos1 && filter(pos1)) { room.createConstructionSite(pos1, type) }
             var pos2 = room.getPositionAt(originPos.x + i, originPos.y + range);
-            if (pos2 && Math.abs(pos2.x - pos2.y) % 2 == 0 && pos2.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 && pos2.lookFor(LOOK_STRUCTURES).length == 0 && Game.map.getTerrainAt(pos2.x, pos2.y, room.name) != "wall") {
-                pos = pos2;
-                break;
-            }
+            if(pos2 && filter(pos2)) { room.createConstructionSite(pos2, type) }
             var pos3 = room.getPositionAt(originPos.x - range, originPos.y + i);
-            if (pos3 && Math.abs(pos3.x - pos3.y) % 2 == 0 && pos3.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 && pos3.lookFor(LOOK_STRUCTURES).length == 0 && Game.map.getTerrainAt(pos3.x, pos3.y, room.name) != "wall") {
-                pos = pos3;
-                break;
-            }
+            if(pos3 && filter(pos3)) { room.createConstructionSite(pos3, type) }
             var pos4 = room.getPositionAt(originPos.x + range, originPos.y + i);
-            if (pos4 && Math.abs(pos4.x - pos4.y) % 2 == 0 && pos4.lookFor(LOOK_CONSTRUCTION_SITES).length == 0 && pos4.lookFor(LOOK_STRUCTURES).length == 0 && Game.map.getTerrainAt(pos4.x, pos4.y, room.name) != "wall") {
-                pos = pos4;
-                break;
-            }
+            if(pos4 && filter(pos4)) { room.createConstructionSite(pos4, type) }
         }
-        if (pos) {
-            var result = room.createConstructionSite(pos.x, pos.y, STRUCTURE_STORAGE);
-            return result;
-        }
-        return -9;
     }
 
 }

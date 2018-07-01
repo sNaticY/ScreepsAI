@@ -5,6 +5,7 @@ import { SubTrees, Board } from "behaviour/index";
 var aiBrain = SubTrees.AIBrain();
 var aiConstrucion = SubTrees.AIConstruction();
 var aiSpawn = SubTrees.AISpawn();
+var aiTower = SubTrees.AITower();
 var aiHarvester = SubTrees.AIHarvester();
 var aiUpgrader = SubTrees.AIUpgrader();
 var aiBuilder = SubTrees.AIBuilder();
@@ -16,12 +17,19 @@ var aiCarrier = SubTrees.AICarrier();
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 export const loop = ErrorMapper.wrapLoop(() => {
 
+	Board.CurrentRoom = Game.rooms[Game.spawns["Spawn1"].room.name];
 	Board.CurrentSpawn = Game.spawns["Spawn1"];
 	
 	aiBrain.Execute("0");
 	
 	aiConstrucion.Execute(Board.CurrentSpawn.id);
 	aiSpawn.Execute(Board.CurrentSpawn.id);
+
+	var towers = Board.CurrentRoom.find<StructureTower>(FIND_STRUCTURES, {filter:(s)=> s.structureType == STRUCTURE_TOWER})
+	for (const tower of towers) {
+		Board.CurrentTower = tower;
+		aiTower.Execute(tower.id);
+	}
 
 	for (var name in Game.creeps) {
 		var creep = Game.creeps[name];
