@@ -733,12 +733,24 @@ class BaseActions {
 
 	public static GetCreepNumber(role: string, level: number): number {
 		var creeps = _.filter(Game.creeps, (creep) => creep.memory.role == role && creep.memory.level == level);
-		return creeps.length
+		var deadNumber:number = 0;
+		for (const creep of creeps) {
+			if(creep.ticksToLive && creep.ticksToLive < 100) {
+				deadNumber++;
+			}
+		}
+		return creeps.length - deadNumber;
 	}
 
 	public static GetCreepNumberIgnoreLevel(role: string): number {
 		var creeps = _.filter(Game.creeps, (creep) => creep.memory.role == role);
-		return creeps.length
+		var deadNumber:number = 0;
+		for (const creep of creeps) {
+			if(creep.ticksToLive && creep.ticksToLive < 100) {
+				deadNumber++;
+			}
+		}
+		return creeps.length - deadNumber;
 	}
 }
 
