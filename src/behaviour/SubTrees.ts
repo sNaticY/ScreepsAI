@@ -3,6 +3,7 @@ import Board, { Strategy } from "./Board"
 import Sequence from "./Sequence";
 import Status from "./Status";
 import Selector from "./Selector";
+import SmallTrees from "./SmallTrees";
 
 import {
 	LoopSleepTicks,
@@ -32,14 +33,13 @@ import {
 	BuildTowerInMiddle,
 	TowerAttackClosest,
 	CheckUseableEnergy,
-	CheckCreepEnergyFull,
-	CheckCreepEnergyEmpty,
 	CheckBackupEnergy,
-	MoveAndWithdrawNearestEnergy,
+	MoveAndWithdrawNearestAllEnergy,
 	CheckCurStrategy,
 	CheckNeedBuild,
 	MoveAndWithdrawEnergyFromStorage,
 	WithdrawNearestEnergWithoutMove,
+	CheckCondition,
 } from "./Actions";
 
 import {
@@ -48,6 +48,7 @@ import {
 	Repeat,
 } from "./Decorators";
 import Parallel from "./Parallel";
+import BaseActions from "./BaseActions";
 
 
 export default class SubTrees {
@@ -121,10 +122,10 @@ export default class SubTrees {
 	public static AIHarvester(): Tree {
 		let tree = new Selector();
 		tree.AddSubTree(
-			SubTrees.TryStoreUseableEnergySequence(),
-			SubTrees.TryBuild(),
-			SubTrees.TryStoreBackupEnergySequence(),
-			SubTrees.TryUpgrade(),
+			SubTrees.TryStoreUseableEnergyOnce(),
+			SubTrees.TryBuildOnce(),
+			SubTrees.TryStoreBackupEnergyOnce(),
+			SubTrees.TryUpgradeOnce(),
 			new NothingToDoWarning()
 		);
 		return tree;
@@ -134,10 +135,10 @@ export default class SubTrees {
 		var tree = new Selector();
 		tree.AddSubTree(
 			//new LogAction("Try Upgrade Before", false),
-			SubTrees.TryUpgrade(),
+			SubTrees.TryUpgradeOnce(),
 			//new LogAction("Try Upgrade Done", false),
-			SubTrees.TryStoreUseableEnergySequence(),
-			SubTrees.TryStoreBackupEnergySequence(),
+			SubTrees.TryStoreUseableEnergyOnce(),
+			SubTrees.TryStoreBackupEnergyOnce(),
 			new NothingToDoWarning()
 		);
 		return tree;
@@ -145,11 +146,11 @@ export default class SubTrees {
 
 	public static AIBuilder(): Tree {
 		var tree = new Selector().AddSubTree(
-			SubTrees.TryBuild(),
-			SubTrees.TryRepair(),
+			SubTrees.TryBuildOnce(),
+			SubTrees.TryRepairOnce(),
 			SubTrees.TryFillTower(),
-			SubTrees.TryStoreUseableEnergySequence(),
-			SubTrees.TryStoreBackupEnergySequence(),
+			SubTrees.TryStoreUseableEnergyOnce(),
+			SubTrees.TryStoreBackupEnergyOnce(),
 			new NothingToDoWarning()
 		);
 		return tree;
@@ -165,9 +166,9 @@ export default class SubTrees {
 
 	public static AICarrier(): Tree {
 		let tree = new Selector().AddSubTree(
-			SubTrees.TryStoreUseableEnergySequence(),
-			SubTrees.TryStoreBackupEnergySequence(),
-			SubTrees.TryBuild(),
+			SubTrees.TryStoreUseableEnergyOnce(),
+			SubTrees.TryStoreBackupEnergyOnce(),
+			SubTrees.TryBuildOnce(),
 			new NothingToDoWarning()
 		)
 		return tree;
@@ -216,91 +217,75 @@ export default class SubTrees {
 		)
 	}
 
-	private static TryStoreUseableEnergySequence(): Tree {
+	private static TryStoreUseableEnergyOnce(): Tree {
 		return new Sequence().AddSubTree(
 			new CheckUseableEnergy(false),
 			new Selector().AddSubTree(
-				new Sequence().AddSubTree(
-					new CheckCreepEnergyFull(false),
-					new Selector().AddSubTree(
-						new MoveAndPickupEnergy(),
-						new MoveAndWithdrawEnergyFromContainer(),
-						new MoveAndHarvest(),
-						new MoveAndWithdrawEnergyFromStorage(),
-					),
-				),
-				new Selector().AddSubTree(
-					new MoveAndTransferEnergyToSpawn(),
-					new MoveAndTransferEnergyToExtension(),
-				)
+				new CheckCondition(false, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+				SmallTrees.GetEnergyTillFullForStoreUseable(),
+			),
+			new Selector().AddSubTree(
+				new CheckUseableEnergy(true),
+				SmallTrees.StoreUseableEnergyTillEmpty(),
 			)
 		)
 	}
 
-	private static TryStoreBackupEnergySequence(): Tree {
+	private static TryStoreBackupEnergyOnce(): Tree {
 		return new Sequence().AddSubTree(
 			new CheckBackupEnergy(false),
 			new Selector().AddSubTree(
-				new Sequence().AddSubTree(
-					new CheckCreepEnergyFull(false),
-					new Selector().AddSubTree(
-						new MoveAndPickupEnergy(),
-						new MoveAndWithdrawEnergyFromContainer(),
-					),
-				),
-				new Selector().AddSubTree(
-					new MoveAndTransferEnergyToStorage(),
-				)
+				new CheckCondition(false, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+				SmallTrees.GetEnergyTillFullForStoreBackup(),
+			),
+			new Selector().AddSubTree(
+				new CheckBackupEnergy(true),
+				SmallTrees.StoreBackupEnergyTillEmpty(),
 			)
 		)
 	}
 
-	private static TryBuild(): Tree {
+	private static TryBuildOnce(): Tree {
 		return new Sequence().AddSubTree(
 			new CheckCurStrategy(true, Strategy.Balance, Strategy.ResourceConstruction, Strategy.NormalConstruction),
 			new CheckNeedBuild(true),
-			new Result(true,new Selector().AddSubTree(
-				new Sequence().AddSubTree(
-					new CheckCreepEnergyFull(false),
-					new MoveAndWithdrawNearestEnergy(),
-				),
-				new MoveAndBuildConstruction(),
-			))
+			new Selector().AddSubTree(
+				new CheckCondition(false, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+				SmallTrees.GetEnergyTillFullForWork(),
+			),
+			new Selector().AddSubTree(
+				new CheckNeedBuild(false),
+				SmallTrees.BuildTillEmpty(),
+			)
 		)
 	}
 
-	private static TryUpgrade(): Tree {
+	private static TryUpgradeOnce(): Tree {
 		return new Sequence().AddSubTree(
 			new CheckCurStrategy(true, Strategy.Balance, Strategy.NormalWorker, Strategy.NormalConstruction, Strategy.Upgrade),
-			new Result(true, new Selector().AddSubTree(
-				new Sequence().AddSubTree(
-					//new LogAction("CheckCreepBefore", true),
-					new CheckCreepEnergyFull(false),
-					//new LogAction("CheckCreepEnergyAfter", true),
-					new Selector().AddSubTree(
-						//new LogAction("MoveAndWithdrawBefore", false),
-						new MoveAndWithdrawNearestEnergy(),
-						//new LogAction("MoveAndWithdrawFinish", false),
-						new MoveAndHarvest(),
-					),
-					//new LogAction("WithDrawSequenceFinish", false),
-				),	
-				new MoveAndUpgradeController(),
-			)),
+			new Selector().AddSubTree(
+				new CheckCondition(false, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+				SmallTrees.GetEnergyTillFullForWork(),
+			),
+			new Selector().AddSubTree(
+				new CheckCurStrategy(false, Strategy.Balance, Strategy.NormalWorker, Strategy.NormalConstruction, Strategy.Upgrade),
+				SmallTrees.UpgradeAndWithdrawTillEmpty(),
+			)
 		)
 	}
 
-	private static TryRepair(): Tree {
+	private static TryRepairOnce(): Tree {
 		return new Sequence().AddSubTree(
 			new LoopSleepTicks(7, true),
 			new CheckCurStrategy(true, Strategy.Balance),
-			new Result(true, new Selector().AddSubTree(
-				new Sequence().AddSubTree(
-					new CheckCreepEnergyFull(false),
-					new MoveAndWithdrawNearestEnergy(),
-				),
-				new MoveAndRepairConstruction(),
-			))
+			new Selector().AddSubTree(
+				new CheckCondition(false, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+				SmallTrees.GetEnergyTillFullForWork(),
+			),
+			new Selector().AddSubTree(
+				new CheckCurStrategy(false, Strategy.Balance, Strategy.NormalWorker, Strategy.NormalConstruction, Strategy.Upgrade),
+				SmallTrees.RepairTillEmpty(),
+			)
 		)
 	}
 
@@ -309,11 +294,12 @@ export default class SubTrees {
 			new LoopSleepTicks(47, true),
 			new CheckCurStrategy(true, Strategy.Balance),
 			new Selector().AddSubTree(
-				new Sequence().AddSubTree(
-					new CheckCreepEnergyFull(false),
-					new MoveAndWithdrawNearestEnergy(),
-				),
-				new MoveAndTransferEnergyToTower(),
+				new CheckCondition(false, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+				SmallTrees.GetEnergyTillFullForWork(),
+			),
+			new Selector().AddSubTree(
+				new CheckCurStrategy(false, Strategy.Balance, Strategy.NormalWorker, Strategy.NormalConstruction, Strategy.Upgrade),
+				SmallTrees.FillTowerTillEmpty(),
 			)
 		)
 	}

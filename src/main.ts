@@ -22,7 +22,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
 			const room = Game.rooms[roomName];
 			Board.CurrentRoom = room;
 			aiBrain.Execute("AIBrain-", room.name);
-			aiConstrucion.Execute("AIConstruction-",room.name);
+			aiConstrucion.Execute("AIConstruction-", room.name);
 
 			var spawnsInRoom = room.find(FIND_MY_SPAWNS);
 			for (const spawn of spawnsInRoom) {
@@ -30,7 +30,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
 				aiSpawn.Execute("AISpawn-", Board.CurrentSpawn.id);
 			}
 
-			var towers = Board.CurrentRoom.find<StructureTower>(FIND_STRUCTURES, {filter:(s)=> s.structureType == STRUCTURE_TOWER})
+			var towers = Board.CurrentRoom.find<StructureTower>(FIND_STRUCTURES, { filter: (s) => s.structureType == STRUCTURE_TOWER })
 			for (const tower of towers) {
 				Board.CurrentTower = tower;
 				aiTower.Execute("AITower-", tower.id);
@@ -48,10 +48,10 @@ export const loop = ErrorMapper.wrapLoop(() => {
 				else if (creep.memory.role == 'builder') {
 					aiBuilder.Execute("AIBuilder-", creep.id);
 				}
-				else if(creep.memory.role == "miner") {
+				else if (creep.memory.role == "miner") {
 					aiMiner.Execute("AIMiner-", creep.id);
 				}
-				else if(creep.memory.role == "carrier") {
+				else if (creep.memory.role == "carrier") {
 					aiCarrier.Execute("AICarrier-", creep.id);
 				}
 			}

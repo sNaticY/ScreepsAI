@@ -3,7 +3,7 @@ import { random, List, Dictionary } from "lodash";
 
 
 interface PosFilter {
-    (pos:RoomPosition): boolean;
+    (pos: RoomPosition): boolean;
 }
 
 const BodyParts: Dictionary<List<BodyPartConstant[]>> = {
@@ -141,13 +141,13 @@ export class BuildHelper {
         var pos: RoomPosition | undefined;
         for (let i = range * -1; i < range; i++) {
             var pos1 = room.getPositionAt(originPos.x + i, originPos.y - range);
-            if(pos1 && filter(pos1)) { pos = pos1; break; }
+            if (pos1 && filter(pos1)) { pos = pos1; break; }
             var pos2 = room.getPositionAt(originPos.x + i, originPos.y + range);
-            if(pos2 && filter(pos2)) { pos = pos2; break; }
+            if (pos2 && filter(pos2)) { pos = pos2; break; }
             var pos3 = room.getPositionAt(originPos.x - range, originPos.y + i);
-            if(pos3 && filter(pos3)) { pos = pos3; break; }
+            if (pos3 && filter(pos3)) { pos = pos3; break; }
             var pos4 = room.getPositionAt(originPos.x + range, originPos.y + i);
-            if(pos4 && filter(pos4)) { pos = pos4; break; }
+            if (pos4 && filter(pos4)) { pos = pos4; break; }
         }
         if (pos) {
             var result = room.createConstructionSite(pos.x, pos.y, type);
@@ -160,13 +160,13 @@ export class BuildHelper {
         var room = Board.CurrentRoom;
         for (let i = range * -1; i < range; i++) {
             var pos1 = room.getPositionAt(originPos.x + i, originPos.y - range);
-            if(pos1 && filter(pos1)) { room.createConstructionSite(pos1, type) }
+            if (pos1 && filter(pos1)) { room.createConstructionSite(pos1, type) }
             var pos2 = room.getPositionAt(originPos.x + i, originPos.y + range);
-            if(pos2 && filter(pos2)) { room.createConstructionSite(pos2, type) }
+            if (pos2 && filter(pos2)) { room.createConstructionSite(pos2, type) }
             var pos3 = room.getPositionAt(originPos.x - range, originPos.y + i);
-            if(pos3 && filter(pos3)) { room.createConstructionSite(pos3, type) }
+            if (pos3 && filter(pos3)) { room.createConstructionSite(pos3, type) }
             var pos4 = room.getPositionAt(originPos.x + range, originPos.y + i);
-            if(pos4 && filter(pos4)) { room.createConstructionSite(pos4, type) }
+            if (pos4 && filter(pos4)) { room.createConstructionSite(pos4, type) }
         }
     }
 

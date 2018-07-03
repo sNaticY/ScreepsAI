@@ -4,9 +4,6 @@ import Tree from "./Tree";
 
 export default class Sequence extends Tree {
     public Execute(name: string, id: string): Status {
-        if(id == "5b3aaf785c2b1a6b84a93c0a"){
-			console.log(name + "Sequence")
-		}
         let tree: Tree;
         if (this.State[id] == Status.Running) {
             var runningProcessed = false;

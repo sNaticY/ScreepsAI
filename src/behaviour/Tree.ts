@@ -15,7 +15,7 @@ export default abstract class Tree implements TreeNode {
         this.State = {};
     }
 
-    abstract Execute(name:string, id: string): Status;
+    abstract Execute(name: string, id: string): Status;
 
     public AddSubTree(...subtrees: Tree[]): Tree {
         this.SubTrees.push(...subtrees);
@@ -23,9 +23,6 @@ export default abstract class Tree implements TreeNode {
     }
 
     protected ReturnState(state: Status, id: string): Status {
-        if(id == "5b3aaf785c2b1a6b84a93c0a") {
-            console.log("Set Return State", state)
-        }
         this.State[id] = state;
         return state;
     }
