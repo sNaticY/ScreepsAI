@@ -9,7 +9,7 @@ interface PosFilter {
 const BodyParts: Dictionary<List<BodyPartConstant[]>> = {
     worker: [
         [],
-        //300, 4
+        // 300, 4
         [
             WORK, //100
             CARRY,  //50
@@ -39,13 +39,13 @@ const BodyParts: Dictionary<List<BodyPartConstant[]>> = {
             CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,//450
             MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE,//450
         ],
-        //2300, 33
+        // 2300, 33
         [
             WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, //1100
             CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, //550
             MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, //550
         ],
-        //5300, 50
+        // 5300, 50
         [
             WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK,//1700
             CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,//800

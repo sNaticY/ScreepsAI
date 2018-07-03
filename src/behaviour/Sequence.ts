@@ -3,20 +3,23 @@ import Status from "./Status";
 import Tree from "./Tree";
 
 export default class Sequence extends Tree {
-    public Execute(id: string): Status {
+    public Execute(name: string, id: string): Status {
+        if(id == "5b3aaf785c2b1a6b84a93c0a"){
+			console.log(name + "Sequence")
+		}
         let tree: Tree;
         if (this.State[id] == Status.Running) {
             var runningProcessed = false;
             for (tree of this.SubTrees) {
                 if (runningProcessed) {
-                    var result = tree.Execute(id);
+                    var result = tree.Execute(name + "Sequence-", id);
                     if (result == Status.Running || result == Status.Failure) {
                         return this.ReturnState(result, id);
                     }
                 }
-                else{
+                else {
                     if (tree.State[id] == Status.Running) {
-                        var result = tree.Execute(id);
+                        var result = tree.Execute(name + "Sequence-", id);
                         runningProcessed = true;
                         if (result == Status.Running || result == Status.Failure) {
                             return this.ReturnState(result, id);
@@ -28,7 +31,7 @@ export default class Sequence extends Tree {
         }
         else {
             for (tree of this.SubTrees) {
-                var result = tree.Execute(id);
+                var result = tree.Execute(name + "Sequence-", id);
                 if (result == Status.Failure || result == Status.Running) {
                     return this.ReturnState(result, id);
                 }

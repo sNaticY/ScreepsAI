@@ -23,27 +23,28 @@ export default class Parallel extends Tree {
         this.failureNum = {};
     }
 
-    public Execute(id: string): Status {
-        if(this.State[id] == Status.Running)
-        {
+    public Execute(name: string, id: string): Status {
+        if(id == "5b3aaf785c2b1a6b84a93c0a"){
+			console.log(name + "Parallel")
+		}
+        if (this.State[id] == Status.Running) {
             var hasRunning = false;
             for (var tree of this.SubTrees) {
-                if(tree.State[id] == Status.Running) {
-                    var result = tree.Execute(id)
+                if (tree.State[id] == Status.Running) {
+                    var result = tree.Execute(name + "parallel-", id)
                     if (result == Status.Succeed) {
                         this.succeedNum[id]++;
                     }
-                    else if(result == Status.Failure) {
+                    else if (result == Status.Failure) {
                         this.failureNum[id]++;
                     }
                     else {
                         hasRunning = true;
                     }
 
-                    if(this.canbreak)
-                    {
+                    if (this.canbreak) {
                         if (this.succeedNum[id] >= this.succeed) {
-                            return this.ReturnState(Status.Succeed,id)
+                            return this.ReturnState(Status.Succeed, id)
                         }
                         if (this.failureNum[id] >= this.failure) {
                             return this.ReturnState(Status.Failure, id);
@@ -51,56 +52,55 @@ export default class Parallel extends Tree {
                     }
                 }
             }
-            if(hasRunning) {
+            if (hasRunning) {
                 return this.ReturnState(Status.Running, id)
             }
-            else{
+            else {
                 if (this.succeedNum[id] >= this.succeed) {
-                    return this.ReturnState(Status.Succeed,id)
+                    return this.ReturnState(Status.Succeed, id)
                 }
                 else if (this.failureNum[id] >= this.failure) {
                     return this.ReturnState(Status.Failure, id);
                 }
-                else{
+                else {
                     return this.ReturnState(this.default, id);
                 }
             }
         }
-        else{
+        else {
             var hasRunning = false;
             for (var tree of this.SubTrees) {
-                var result = tree.Execute(id)
+                var result = tree.Execute(name + "parallel-", id)
                 if (result == Status.Succeed) {
                     this.succeedNum[id]++;
                 }
-                else if(result == Status.Failure) {
+                else if (result == Status.Failure) {
                     this.failureNum[id]++;
                 }
                 else {
                     hasRunning = true;
                 }
-    
-                if(this.canbreak)
-                {
+
+                if (this.canbreak) {
                     if (this.succeedNum[id] >= this.succeed) {
-                        return this.ReturnState(Status.Succeed,id)
+                        return this.ReturnState(Status.Succeed, id)
                     }
                     if (this.failureNum[id] >= this.failure) {
                         return this.ReturnState(Status.Failure, id);
                     }
                 }
             }
-            if(hasRunning) {
+            if (hasRunning) {
                 return this.ReturnState(Status.Running, id)
             }
-            else{
+            else {
                 if (this.succeedNum[id] >= this.succeed) {
-                    return this.ReturnState(Status.Succeed,id)
+                    return this.ReturnState(Status.Succeed, id)
                 }
                 else if (this.failureNum[id] >= this.failure) {
                     return this.ReturnState(Status.Failure, id);
                 }
-                else{
+                else {
                     return this.ReturnState(this.default, id);
                 }
             }

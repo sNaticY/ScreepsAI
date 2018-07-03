@@ -4,6 +4,11 @@ import Status from "./Status"
 import { BuildHelper } from "../utils/BuildHelper"
 import { List, random } from "lodash"
 
+
+interface CreepCondition {
+    (creep:Creep): boolean;
+}
+
 export class LoopSleepTicks extends Tree {
 	tick: number = 0;
 	maxTick: number;
@@ -11,11 +16,12 @@ export class LoopSleepTicks extends Tree {
 
 	constructor(tick: number, afterResult: boolean) {
 		super();
+		this.tick = tick;
 		this.maxTick = tick;
 		this.afterResult = afterResult;
 	}
 
-	public Execute(id: string) {
+	public Execute(name:string, id: string) {
 		this.tick++;
 		if (this.tick >= this.maxTick) {
 			this.tick = 0;
@@ -28,15 +34,21 @@ export class LoopSleepTicks extends Tree {
 }
 
 export class CheckCurStrategy extends Tree {
-	targetStrategy: Strategy
+	targetStrategys: Strategy[]
 	ifMatch: boolean
-	constructor(target: Strategy, ifMatch: boolean) {
+	constructor(ifMatch: boolean, ...target: Strategy[]) {
 		super();
-		this.targetStrategy = target;
+		this.targetStrategys = target;
 		this.ifMatch = ifMatch;
 	}
-	Execute(id: string): Status {
-		var match = Board.Strategy == this.targetStrategy;
+	Execute(name:string, id: string): Status {
+		var match = false;
+		for (const str of this.targetStrategys) {
+			if (str == Board.Strategy) {
+				match = true;
+				break;
+			}
+		}
 		if (this.ifMatch) {
 			return match ? this.ReturnState(Status.Succeed, id) : this.ReturnState(Status.Failure, id);
 		}
@@ -55,12 +67,12 @@ export class CheckNearestFlag extends Tree {
 	minPathY: number = 0;
 
 	finish: boolean = false;
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		if (this.finish) {
 			//console.log("Finish Check Nearest Flag")
 			return this.ReturnState(Status.Succeed, id);
 		}
-		var room = Board.CurrentSpawn.room;
+		var room = Board.CurrentRoom;
 		if (Game.flags["MinFlag"]) {
 			Game.flags["MinFlag"].remove();
 			room.memory.hasRoadBuild = false;
@@ -73,17 +85,22 @@ export class CheckNearestFlag extends Tree {
 			}
 		}
 
-		if (!room.controller) {
-			//console.log("Finish Check Nearest Flag")
-			return this.ReturnState(Status.Failure, id);
+
+		var targets: RoomPosition[] = []
+		var spawns = room.find(FIND_MY_SPAWNS);
+		var sources = room.find(FIND_SOURCES);
+
+		for (const spawn of spawns) {
+			targets.push(spawn.pos);
 		}
 
-		var targets: List<RoomPosition> = [
-			room.find(FIND_SOURCES)[0].pos,
-			room.find(FIND_SOURCES)[1].pos,
-			Board.CurrentSpawn.pos,
-			room.controller.pos,
-		]
+		for (const source of sources) {
+			targets.push(source.pos);
+		}
+
+		if (room.controller) {
+			targets.push(room.controller.pos);
+		}
 
 		for (let i = 0; i < 25;) {
 			var pos = room.getPositionAt(this.x, this.y);
@@ -128,8 +145,8 @@ export class CheckNearestFlag extends Tree {
 }
 
 export class BuildRoadFromMinFlag extends Tree {
-	Execute(id: string): Status {
-		var room = Board.CurrentSpawn.room;
+	Execute(name:string, id: string): Status {
+		var room = Board.CurrentRoom;
 		if (room.memory.hasRoadBuild) {
 			return this.ReturnState(Status.Succeed, id);
 		}
@@ -172,8 +189,8 @@ export class BuildRoadFromMinFlag extends Tree {
 }
 
 export class BuildExtensionsByPath extends Tree {
-	Execute(id: string): Status {
-		var room = Board.CurrentSpawn.room;
+	Execute(name:string, id: string): Status {
+		var room = Board.CurrentRoom;
 		let extensions = room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType == STRUCTURE_EXTENSION });
 		let extensionSites = room.find(FIND_CONSTRUCTION_SITES, { filter: (s) => s.structureType == STRUCTURE_EXTENSION });
 		let extensionCount: number = 0;
@@ -217,8 +234,8 @@ export class BuildExtensionsByPath extends Tree {
 }
 
 export class BuildContainerNearSource extends Tree {
-	Execute(id: string): Status {
-		var room = Board.CurrentSpawn.room;
+	Execute(name:string, id: string): Status {
+		var room = Board.CurrentRoom;
 		var sources = room.find(FIND_SOURCES)
 		var containers = room.find(FIND_STRUCTURES, { filter: (s) => s.structureType == STRUCTURE_CONTAINER });
 		var containerSites = room.find(FIND_CONSTRUCTION_SITES, { filter: (s) => s.structureType == STRUCTURE_CONTAINER });
@@ -242,7 +259,7 @@ export class BuildContainerNearSource extends Tree {
 }
 
 export class TowerAttackClosest extends Tree {
-	Execute(id: string): Status {
+	Execute(name:string, id: string): Status {
 		var tower = Board.CurrentTower;
 		var closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
 		if (closestHostile) {
@@ -256,8 +273,8 @@ export class TowerAttackClosest extends Tree {
 }
 
 export class BuildStorageNearController extends Tree {
-	Execute(id: string): Status {
-		var room = Board.CurrentSpawn.room;
+	Execute(name:string, id: string): Status {
+		var room = Board.CurrentRoom;
 		var controller = room.controller;
 		if (controller) {
 			var storages = room.find(FIND_MY_STRUCTURES, { filter: (s) => s.structureType == STRUCTURE_STORAGE });
@@ -280,8 +297,8 @@ export class BuildStorageNearController extends Tree {
 }
 
 export class BuildTowerInMiddle extends Tree {
-	Execute(id: string): Status {
-		var room = Board.CurrentSpawn.room;
+	Execute(name:string, id: string): Status {
+		var room = Board.CurrentRoom;
 		var minFlag = Game.flags["MinFlag"];
 		var path = room.findPath(Board.CurrentSpawn.pos, minFlag.pos);
 		var middlePath = path[Math.floor(path.length / 2)];
@@ -308,7 +325,7 @@ export class BuildCreep extends Tree {
 		this.name = name;
 		this.level = level;
 	}
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var result = BaseActions.BuildCreep(this.role, this.name, this.level);
 		// console.log("Try build", this.role, "\t[level", this.level, "]" , result);
 		return this.ReturnState(result, id);
@@ -323,8 +340,8 @@ export class BuildBetterCreep extends Tree {
 		this.role = role;
 		this.name = name;
 	}
-	public Execute(id: string): Status {
-		var creeps = Board.CurrentSpawn.room.find(FIND_CREEPS, { filter: (c) => c.memory.role == this.role })
+	public Execute(name:string, id: string): Status {
+		var creeps = Board.CurrentRoom.find(FIND_CREEPS, { filter: (c) => c.memory.role == this.role })
 		var maxLevel: number = 0;
 		for (var cr of creeps) {
 			if (cr.memory.level > maxLevel) {
@@ -357,7 +374,7 @@ export class CheckCreepNum extends Tree {
 		}
 		this.isTrue = isTrueWhenEqual;
 	}
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var targetNumber: number = 0;
 		var creepsNumber: number = 0;
 		if (this.level) {
@@ -376,7 +393,10 @@ export class CheckCreepNum extends Tree {
 }
 
 export class MoveAndHarvest extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
+		if(id == "5b3aaf785c2b1a6b84a93c0a"){
+			console.log(name + "MoveAndHarvest")
+		}
 		var creep = Board.CurrentCreep;
 		if ((creep.memory.role != "miner" && creep.carry.energy >= creep.carryCapacity)) {
 
@@ -413,7 +433,7 @@ export class MoveAndHarvest extends Tree {
 }
 
 export class MoveAndTransferEnergyToSpawn extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
 			return this.ReturnState(Status.Failure, id);
@@ -445,7 +465,7 @@ export class MoveAndTransferEnergyToSpawn extends Tree {
 }
 
 export class MoveAndTransferEnergyToExtension extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
 			return this.ReturnState(Status.Failure, id);
@@ -477,7 +497,7 @@ export class MoveAndTransferEnergyToExtension extends Tree {
 }
 
 export class MoveAndTransferEnergyToTower extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
 			return this.ReturnState(Status.Failure, id);
@@ -509,7 +529,7 @@ export class MoveAndTransferEnergyToTower extends Tree {
 }
 
 export class MoveAndTransferEnergyToStorage extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
 			// creep.say('🔄 harvest');
@@ -543,21 +563,50 @@ export class MoveAndTransferEnergyToStorage extends Tree {
 	}
 }
 
-export class CheckCreepEnergy extends Tree {
+export class CheckCreepCondition extends Tree {
+	condition: CreepCondition;
+	ifMatch:boolean
+	constructor(condition: CreepCondition, ifMatch: boolean) {
+		super();
+		this.condition = condition;
+		this.ifMatch = ifMatch;
+	}
+	public Execute(name:string, id: string): Status {
+		var result = this.condition(Board.CurrentCreep)
+		return this.ifMatch ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id)
+	}
+}
+
+export class CheckCreepEnergyFull extends Tree {
 	ifFull: boolean;
 	constructor(ifFull: boolean) {
 		super();
 		this.ifFull = ifFull;
 	}
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
+		if(id == "5b3aaf785c2b1a6b84a93c0a"){
+			console.log(name + "CheckCreepEnergy")
+		}
 		var result = Board.CurrentCreep.carry.energy == Board.CurrentCreep.carryCapacity;
 		return this.ifFull ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id)
 	}
 }
 
+export class CheckCreepEnergyEmpty extends Tree {
+	ifEmpty: boolean;
+	constructor(ifEmpty: boolean) {
+		super();
+		this.ifEmpty = ifEmpty;
+	}
+	public Execute(name:string, id: string): Status {
+		var result = Board.CurrentCreep.carry.energy == 0;
+		return this.ifEmpty ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id)
+	}
+}
+
 // Going Pickup returns running, finish returns true, other issue returns false
 export class MoveAndPickupEnergy extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy >= creep.carryCapacity) {
 			return this.ReturnState(Status.Failure, id);
@@ -585,7 +634,7 @@ export class MoveAndPickupEnergy extends Tree {
 }
 
 export class MoveAndWithdrawEnergyFromContainer extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy >= creep.carryCapacity) {
 			return this.ReturnState(Status.Failure, id);
@@ -594,7 +643,7 @@ export class MoveAndWithdrawEnergyFromContainer extends Tree {
 		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
 			filter: (structure) => {
 				return (structure.structureType == STRUCTURE_CONTAINER) &&
-					structure.store[RESOURCE_ENERGY] > 0;
+					structure.store[RESOURCE_ENERGY] > 50;
 			}
 		});
 
@@ -615,17 +664,19 @@ export class MoveAndWithdrawEnergyFromContainer extends Tree {
 	}
 }
 
-
-export class WithdrawNearestEnergy extends Tree {
-	Execute(id:string):Status {
+export class MoveAndWithdrawEnergyFromStorage extends Tree {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy >= creep.carryCapacity) {
 			return this.ReturnState(Status.Failure, id);
 		}
-		var target = creep.pos.findClosestByPath<FIND_STRUCTURES>(FIND_STRUCTURES, {filter: (s) => {
-			return ((s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_SPAWN ) && s.energy > 0) ||
-					( s.structureType == STRUCTURE_CONTAINER || s.structureType == STRUCTURE_STORAGE ) && s.store.energy > 0
-		}})
+
+		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
+			filter: (structure) => {
+				return (structure.structureType == STRUCTURE_STORAGE) &&
+					structure.store[RESOURCE_ENERGY] > 50;
+			}
+		});
 
 		if (target) {
 			var result = creep.withdraw(target, RESOURCE_ENERGY);
@@ -638,68 +689,107 @@ export class WithdrawNearestEnergy extends Tree {
 			}
 			creep.say('🔄 Withdrawing');
 			return this.ReturnState(Status.Running, id);
+		}
+		// console.log("MoveAndHarvest Failed, Didn't find target to Harvest")
+		return this.ReturnState(Status.Failure, id);
+	}
+}
+
+export class MoveAndWithdrawNearestEnergy extends Tree {
+	Execute(name:string, id: string): Status {
+		if(id == "5b3aaf785c2b1a6b84a93c0a"){
+			console.log(name + "MoveAndWithdrawNearestEnergy")
+		}
+		var creep = Board.CurrentCreep;
+		if (creep.carry.energy >= creep.carryCapacity) {
+			return this.ReturnState(Status.Failure, id);
+		}
+		var target = creep.pos.findClosestByPath<FIND_STRUCTURES>(FIND_STRUCTURES, {
+			filter: (s) => {
+				return ((s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_SPAWN) && s.energy >= 50) ||
+					(s.structureType == STRUCTURE_CONTAINER || s.structureType == STRUCTURE_STORAGE) && s.store.energy >= 50
+			}
+		})
+
+		if (target) {
+			var result = creep.withdraw(target, RESOURCE_ENERGY);
+			if (result == ERR_NOT_IN_RANGE) {
+				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
+
+				creep.say('Withdrawing');
+				return this.ReturnState(Status.Running, id);
+			}
+			// else if (result == 0) {
+			// 	// console.log("MoveAndWithdrawNearestEnergy Done", result)
+			// 	return this.ReturnState(Status.Succeed, id);
+			// }
+			else {
+				// console.log("MoveAndWithdrawNearestEnergy Failed", result)
+				return this.ReturnState(Status.Failure, id);
+			}
+
+		}
+		return this.ReturnState(Status.Failure, id);
+	}
+}
+
+export class WithdrawNearestEnergWithoutMove extends Tree {
+	Execute(name:string, id: string): Status {
+		if(id == "5b3aaf785c2b1a6b84a93c0a"){
+			console.log(name + "WithdrawNearestEnergWithoutMove")
+		}
+		var creep = Board.CurrentCreep;
+		if (creep.carry.energy >= creep.carryCapacity) {
+			return this.ReturnState(Status.Failure, id);
+		}
+		var target = creep.pos.findClosestByRange<FIND_STRUCTURES>(FIND_STRUCTURES, {
+			filter: (s) => {
+				return ((s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_SPAWN) && s.energy >= 50) ||
+					(s.structureType == STRUCTURE_CONTAINER || s.structureType == STRUCTURE_STORAGE) && s.store.energy >= 50
+			}
+		})
+
+		if (target) {
+			var result = creep.withdraw(target, RESOURCE_ENERGY);
+			if (result == 0) {
+				creep.say('🔄 Withdrawing');
+				// console.log("MoveAndHarvest Failed", result)
+				return this.ReturnState(Status.Running, id);
+			}
+			return this.ReturnState(Status.Failure, id);
 		}
 		return this.ReturnState(Status.Failure, id);
 	}
 }
 
 export class MoveAndUpgradeController extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
+		if(id == "5b3aaf785c2b1a6b84a93c0a"){
+			console.log(name + "MoveAndUpgradeController")
+		}
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
 			// creep.say('🔄 harvest');
 			return this.ReturnState(Status.Failure, id);
 		}
-
-		if (creep.carry.energy == creep.carryCapacity) {
-			// creep.say('⚡ upgrade');
-		}
-
 		if (creep.room.controller) {
 			creep.upgradeController(creep.room.controller)
 			creep.moveTo(BaseActions.RandomPosNearTarget(creep.room.controller.pos, creep.room), { visualizePathStyle: { stroke: '#ffffff' } });
-
-			creep.say('🔄 Upgrading');
-			return this.ReturnState(Status.Running, id);
-		}
-		return this.ReturnState(Status.Failure, id);
-	}
-}
-
-export class MoveAndWithdrawEnergyFormExtensions extends Tree {
-	public Execute(id: string): Status {
-		var creep = Board.CurrentCreep;
-		if (creep.carry.energy >= creep.carryCapacity) {
-
-			return this.ReturnState(Status.Failure, id);
-		}
-
-		var target = creep.pos.findClosestByRange(FIND_STRUCTURES, {
-			filter: (structure) => {
-				return (structure.structureType == STRUCTURE_EXTENSION) &&
-					structure.energy > 0;
+			if (creep.carry.energy > 0) {
+				creep.say('Upgrading');
+				return this.ReturnState(Status.Running, id);
 			}
-		});
-
-		if (target) {
-			var result = creep.withdraw(target, RESOURCE_ENERGY);
-			if (result == ERR_NOT_IN_RANGE) {
-				creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
+			else {
+				creep.say('UpgradDone');
+				return this.ReturnState(Status.Succeed, id);
 			}
-			else if (result != 0) {
-				// console.log("MoveAndHarvest Failed", result)
-				return this.ReturnState(Status.Failure, id);
-			}
-			creep.say('🔄 WithDrawing');
-			return this.ReturnState(Status.Running, id);
 		}
-		// console.log("MoveAndHarvest Failed, Didn't find target to Harvest")
 		return this.ReturnState(Status.Failure, id);
 	}
 }
 
 export class MoveAndBuildConstruction extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
 			// creep.say('🔄 harvest');
@@ -732,7 +822,7 @@ export class MoveAndBuildConstruction extends Tree {
 }
 
 export class MoveAndRepairConstruction extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		if (creep.carry.energy == 0) {
 			// creep.say('🔄 harvest');
@@ -771,9 +861,9 @@ export class CheckTotalEnergy extends Tree {
 		this.low = low;
 		this.high = high;
 	}
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var energyTotal = 0
-		energyTotal = Board.CurrentSpawn.room.energyAvailable;
+		energyTotal = Board.CurrentRoom.energyAvailable;
 		if (energyTotal >= this.low && energyTotal < this.high) {
 			return this.ReturnState(Status.Succeed, id);
 		}
@@ -788,7 +878,7 @@ export class CheckUseableEnergy extends Tree {
 		super();
 		this.ifEqual = ifEqual;
 	}
-	Execute(id: string): Status {
+	Execute(name:string, id: string): Status {
 		var result = Board.CurrentRoom.energyAvailable == Board.CurrentRoom.energyCapacityAvailable;
 		return this.ifEqual ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id);
 	}
@@ -802,11 +892,69 @@ export class CheckBackupEnergy extends Tree {
 		this.ifEqual = ifEqual;
 	}
 
-	Execute(id: string): Status {
-		throw new Error("Method not implemented.");
+	Execute(name:string, id: string): Status {
+		var storages = Board.CurrentRoom.find<StructureStorage>(FIND_STRUCTURES, {
+			filter: (s) => {
+				return s.structureType == STRUCTURE_STORAGE;
+			}
+		})
+		var result = storages[0].store.energy == storages[0].storeCapacity;
+		return this.ifEqual ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id);
 	}
 }
 
+export class CheckNeedBuild extends Tree {
+	ifNeed: boolean;
+
+	constructor(ifNeed: boolean) {
+		super();
+		this.ifNeed = ifNeed;
+	}
+
+	Execute(name:string, id: string): Status {
+		var needBuildStructures = Board.CurrentRoom.find(FIND_CONSTRUCTION_SITES);
+		var result = needBuildStructures.length > 0;
+		return this.ifNeed ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id);
+	}
+}
+
+export class CheckNeedRepair extends Tree {
+	ifNeed: boolean;
+
+	constructor(ifNeed: boolean) {
+		super();
+		this.ifNeed = ifNeed;
+	}
+
+	Execute(name:string, id: string): Status {
+		var needRepairStructures = Board.CurrentRoom.find(FIND_STRUCTURES, {
+			filter: (s) => {
+				return s.hits < s.hitsMax - 300;
+			}
+		});
+		var result = needRepairStructures.length > 0;
+		return this.ifNeed ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id);
+	}
+}
+
+export class CheckNeedFillTower extends Tree {
+	ifNeed: boolean;
+
+	constructor(ifNeed: boolean) {
+		super();
+		this.ifNeed = ifNeed;
+	}
+
+	Execute(name:string, id: string): Status {
+		var needFilledTowers = Board.CurrentRoom.find<StructureTower>(FIND_STRUCTURES, {
+			filter: (s) => {
+				return s.structureType == STRUCTURE_TOWER && s.energy < s.energyCapacity - 50;
+			}
+		});
+		var result = needFilledTowers.length > 0;
+		return this.ifNeed ? this.ReturnStateBoolean(result, id) : this.ReturnStateBoolean(!result, id);
+	}
+}
 
 export class CheckEnergyCapcity extends Tree {
 	low: number;
@@ -817,9 +965,9 @@ export class CheckEnergyCapcity extends Tree {
 		this.low = low;
 		this.high = high;
 	}
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var energyCapcity = 0
-		energyCapcity = Board.CurrentSpawn.room.energyCapacityAvailable;
+		energyCapcity = Board.CurrentRoom.energyCapacityAvailable;
 		if (energyCapcity >= this.low && energyCapcity < this.high) {
 			return this.ReturnState(Status.Succeed, id);
 		}
@@ -828,7 +976,7 @@ export class CheckEnergyCapcity extends Tree {
 }
 
 export class NothingToDoWarning extends Tree {
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		var creep = Board.CurrentCreep;
 		creep.say("Sleep!")
 		return this.ReturnState(Status.Failure, id);
@@ -843,7 +991,7 @@ export class LogAction extends Tree {
 		this.log = log;
 		this.result = result;
 	}
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		console.log(this.log);
 		return this.result;
 	}
@@ -856,61 +1004,61 @@ export class AdjustStrategy extends Tree {
 		super();
 		this.level = level;
 	}
-	public Execute(id: string): Status {
+	public Execute(name:string, id: string): Status {
 		Board.EnconemyLevel = this.level;
-		// console.log("SetLevel = ", Board.EnconemyLevel, "Current Energy = ", Board.CurrentSpawn.room.energyAvailable)
+		// console.log("SetLevel = ", Board.EnconemyLevel, "Current Energy = ", Board.CurrentRoom.energyAvailable)
 		switch (Board.EnconemyLevel) {
 			case 1:
-				Board.CreepNumber["harvester"] = [7, 1, 0, 0, 0, 0, 0, 0, 0];
-				Board.CreepNumber["upgrader"] = [0, 1, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [7, 0, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 3, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 1, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 				break;
 			case 2:
-				Board.CreepNumber["harvester"] = [6, 0, 1, 0, 0, 0, 0, 0, 0];
-				Board.CreepNumber["upgrader"] = [0, 0, 1, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [6, 0, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 3, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 1, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 1, 0, 0, 0, 0, 0, 0];
 				break;
 			case 3:
-				Board.CreepNumber["harvester"] = [5, 0, 0, 1, 0, 0, 0, 0, 0];
-				Board.CreepNumber["upgrader"] = [0, 0, 0, 1, 0, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [5, 0, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 3, 0, 0, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 0, 1, 0, 0, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 1, 0, 0, 0, 0, 0];
 				break;
 			case 4:
-				Board.CreepNumber["harvester"] = [4, 0, 0, 0, 1, 0, 0, 0, 0];
-				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [4, 0, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 3, 0, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 				break;
 			case 5:
-				Board.CreepNumber["harvester"] = [3, 0, 0, 0, 0, 1, 0, 0, 0];
-				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 1, 0, 0, 0];
+				Board.CreepNumber["harvester"] = [3, 0, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 2, 0, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 0, 0, 0, 1, 0, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 0, 1, 0, 0, 0];
 				break;
 			case 6:
-				Board.CreepNumber["harvester"] = [1, 0, 0, 0, 0, 0, 1, 0, 0];
-				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 0, 1, 0, 0];
+				Board.CreepNumber["harvester"] = [2, 0, 0, 0, 0, 0, 0, 0, 0];
+				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 0, 2, 0, 0];
 				Board.CreepNumber["builder"] = [0, 0, 0, 0, 0, 0, 1, 0, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 0, 0, 1, 0, 0];
 				break;
 			case 7:
-				Board.CreepNumber["harvester"] = [1, 0, 0, 0, 0, 0, 0, 1, 0];
+				Board.CreepNumber["harvester"] = [1, 0, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 0, 0, 1, 0];
 				Board.CreepNumber["builder"] = [0, 0, 0, 0, 0, 0, 0, 1, 0];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["carrier"] = [0, 0, 0, 0, 0, 0, 0, 1, 0];
 				break;
 			case 8:
-				Board.CreepNumber["harvester"] = [1, 0, 0, 0, 0, 0, 0, 0, 1];
+				Board.CreepNumber["harvester"] = [1, 0, 0, 0, 0, 0, 0, 0, 0];
 				Board.CreepNumber["upgrader"] = [0, 0, 0, 0, 0, 0, 0, 0, 1];
 				Board.CreepNumber["builder"] = [0, 0, 0, 0, 0, 0, 0, 0, 1];
 				Board.CreepNumber["miner"] = [0, 0, 2, 0, 0, 0, 0, 0, 0];

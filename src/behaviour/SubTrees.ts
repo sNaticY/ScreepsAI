@@ -1,5 +1,5 @@
 import Tree from "./Tree";
-import Board from "./Board"
+import Board, { Strategy } from "./Board"
 import Sequence from "./Sequence";
 import Status from "./Status";
 import Selector from "./Selector";
@@ -15,7 +15,6 @@ import {
 	MoveAndRepairConstruction,
 	CheckTotalEnergy,
 	MoveAndPickupEnergy,
-	MoveAndWithdrawEnergyFormExtensions,
 	MoveAndWithdrawEnergyFromContainer,
 	MoveAndTransferEnergyToSpawn,
 	MoveAndTransferEnergyToExtension,
@@ -33,8 +32,14 @@ import {
 	BuildTowerInMiddle,
 	TowerAttackClosest,
 	CheckUseableEnergy,
-	CheckCreepEnergy,
+	CheckCreepEnergyFull,
+	CheckCreepEnergyEmpty,
 	CheckBackupEnergy,
+	MoveAndWithdrawNearestEnergy,
+	CheckCurStrategy,
+	CheckNeedBuild,
+	MoveAndWithdrawEnergyFromStorage,
+	WithdrawNearestEnergWithoutMove,
 } from "./Actions";
 
 import {
@@ -42,6 +47,7 @@ import {
 	NotNode,
 	Repeat,
 } from "./Decorators";
+import Parallel from "./Parallel";
 
 
 export default class SubTrees {
@@ -97,150 +103,14 @@ export default class SubTrees {
 		{
 			var selector = new Selector();
 			{
-				var baseLv1 = new Sequence();
-				{
-					var baseLv1Build = new Selector();
-					baseLv1Build.AddSubTree(
-						this.CheckNumThenBuildCreepSequence("harvester", "Havester", 1),
-						this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 1),
-						this.CheckNumThenBuildCreepSequence("builder", "Builder", 1)
-					);
-				}
-				baseLv1.AddSubTree(new CheckTotalEnergy(0, 301), this.CheckNumThanBuildBetterCreep("harvester", "Havester"), baseLv1Build, new Result(true, null));
-
-				var baseLv2 = new Sequence();
-				{
-					var baseLv2BuildPre = new Sequence();
-					{
-						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
-						var minerBuild = this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2);
-					}
-					baseLv2BuildPre.AddSubTree(harvesterBuild, minerBuild);
-					var baseLv2Build = new Selector();
-					baseLv2Build.AddSubTree(
-						this.CheckNumThenBuildCreepSequence("carrier", "Carrier", 2),
-						this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 2),
-						this.CheckNumThenBuildCreepSequence("builder", "Builder", 2)
-					)
-				}
-				baseLv2.AddSubTree(new CheckTotalEnergy(301, 551), baseLv2BuildPre, baseLv2Build, new Result(true, null))
-
-				var baseLv3 = new Sequence();
-				{
-					var baseLv3BuildPre = new Sequence();
-					{
-						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
-						var minerBuild = this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2)
-					}
-					baseLv3BuildPre.AddSubTree(harvesterBuild, minerBuild);
-
-					var baseLv3Build = new Selector();
-					{
-						var carrierBuild = new Sequence();
-						carrierBuild.AddSubTree(this.CheckNumThenBuildCreepSequence("carrier", "Carrier", 3));
-						var upgraderBuild = new Sequence();
-						upgraderBuild.AddSubTree(this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 3));
-						var builderBuild = new Sequence();
-						builderBuild.AddSubTree(this.CheckNumThenBuildCreepSequence("builder", "Builder", 3));
-					}
-					baseLv3Build.AddSubTree(carrierBuild, upgraderBuild, builderBuild)
-				}
-				baseLv3.AddSubTree(new CheckTotalEnergy(551, 801), baseLv3BuildPre, baseLv3Build, new Result(true, null))
-
-				var baseLv4 = new Sequence();
-				{
-					var baseLv4BuildPre = new Sequence();
-					{
-						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
-						var minerBuild = new Sequence();
-						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
-					}
-					baseLv4BuildPre.AddSubTree(harvesterBuild, minerBuild);
-
-					var baseLv4Build = new Selector();
-					baseLv4Build.AddSubTree(
-						this.CheckNumThenBuildCreepSequence("carrier", "Carrier", 4),
-						this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 4),
-						this.CheckNumThenBuildCreepSequence("builder", "Builder", 4)
-					);
-				}
-				baseLv4.AddSubTree(new CheckTotalEnergy(801, 1301), baseLv4BuildPre, baseLv4Build)
-
-				var baseLv5 = new Sequence();
-				{
-					var baseLv5BuildPre = new Sequence();
-					{
-						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
-						var minerBuild = new Sequence();
-						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
-					}
-					baseLv5BuildPre.AddSubTree(harvesterBuild, minerBuild);
-
-					var baseLv5Build = new Selector();
-					baseLv5Build.AddSubTree(
-						this.CheckNumThenBuildCreepSequence("carrier", "Carrier", 5),
-						this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 5),
-						this.CheckNumThenBuildCreepSequence("builder", "Builder", 5)
-					);
-				}
-				baseLv5.AddSubTree(new CheckTotalEnergy(1301, 1801), baseLv5BuildPre, baseLv5Build)
-
-				var baseLv6 = new Sequence();
-				{
-					var baseLv6BuildPre = new Sequence();
-					{
-						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
-						var minerBuild = new Sequence();
-						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
-					}
-					baseLv6BuildPre.AddSubTree(harvesterBuild, minerBuild);
-
-					var baseLv6Build = new Selector();
-					baseLv6Build.AddSubTree(
-						this.CheckNumThenBuildCreepSequence("carrier", "Carrier", 6),
-						this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 6),
-						this.CheckNumThenBuildCreepSequence("builder", "Builder", 6)
-					);
-				}
-				baseLv6.AddSubTree(new CheckTotalEnergy(1801, 2301), baseLv6BuildPre, baseLv6Build)
-
-				var baseLv7 = new Sequence();
-				{
-					var baseLv7BuildPre = new Sequence();
-					{
-						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
-						var minerBuild = new Sequence();
-						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
-					}
-					baseLv7BuildPre.AddSubTree(harvesterBuild, minerBuild);
-
-					var baseLv7Build = new Selector();
-					baseLv7Build.AddSubTree(
-						this.CheckNumThenBuildCreepSequence("carrier", "Carrier", 7),
-						this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 7),
-						this.CheckNumThenBuildCreepSequence("builder", "Builder", 7)
-					);
-				}
-				baseLv7.AddSubTree(new CheckTotalEnergy(2301, 5301), baseLv7BuildPre, baseLv7Build)
-
-				var baseLv8 = new Sequence();
-				{
-					var baseLv8BuildPre = new Sequence();
-					{
-						var harvesterBuild = this.CheckNumThanBuildBetterCreep("harvester", "Havester");
-						var minerBuild = new Sequence();
-						minerBuild.AddSubTree(this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2));
-					}
-					baseLv8BuildPre.AddSubTree(harvesterBuild, minerBuild);
-
-					var baseLv8Build = new Selector();
-					baseLv8Build.AddSubTree(
-						this.CheckNumThenBuildCreepSequence("carrier", "Carrier", 8),
-						this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", 8),
-						this.CheckNumThenBuildCreepSequence("builder", "Builder", 8),
-					);
-				}
-				baseLv8.AddSubTree(new CheckTotalEnergy(5301, 99999999), baseLv8BuildPre, baseLv8Build)
+				var baseLv1 = SubTrees.BuildCreepsForLevelSequence(0, 301, 1)
+				var baseLv2 = SubTrees.BuildCreepsForLevelSequence(301, 551, 2)
+				var baseLv3 = SubTrees.BuildCreepsForLevelSequence(551, 801, 3)
+				var baseLv4 = SubTrees.BuildCreepsForLevelSequence(801, 1301, 4)
+				var baseLv5 = SubTrees.BuildCreepsForLevelSequence(1301, 1801, 5)
+				var baseLv6 = SubTrees.BuildCreepsForLevelSequence(1801, 2301, 6)
+				var baseLv7 = SubTrees.BuildCreepsForLevelSequence(2301, 5301, 7)
+				var baseLv8 = SubTrees.BuildCreepsForLevelSequence(5301, 999999, 8)
 			}
 			selector.AddSubTree(baseLv8, baseLv7, baseLv6, baseLv5, baseLv4, baseLv3, baseLv2, baseLv1)
 		}
@@ -251,14 +121,10 @@ export default class SubTrees {
 	public static AIHarvester(): Tree {
 		let tree = new Selector();
 		tree.AddSubTree(
-			new MoveAndPickupEnergy(),
-			new MoveAndWithdrawEnergyFromContainer(),
-			new MoveAndHarvest(),
-			new MoveAndTransferEnergyToSpawn(),
-			new MoveAndTransferEnergyToExtension(),
-			new MoveAndTransferEnergyToStorage(),
-			new MoveAndBuildConstruction(),
-			new MoveAndUpgradeController(),
+			SubTrees.TryStoreUseableEnergySequence(),
+			SubTrees.TryBuild(),
+			SubTrees.TryStoreBackupEnergySequence(),
+			SubTrees.TryUpgrade(),
 			new NothingToDoWarning()
 		);
 		return tree;
@@ -267,46 +133,43 @@ export default class SubTrees {
 	public static AIUpgrader(): Tree {
 		var tree = new Selector();
 		tree.AddSubTree(
-			new MoveAndWithdrawEnergyFormExtensions(),
-			new MoveAndHarvest(),
-			new MoveAndUpgradeController(),
-			new MoveAndTransferEnergyToSpawn(),
-			new MoveAndTransferEnergyToExtension(),
+			//new LogAction("Try Upgrade Before", false),
+			SubTrees.TryUpgrade(),
+			//new LogAction("Try Upgrade Done", false),
+			SubTrees.TryStoreUseableEnergySequence(),
+			SubTrees.TryStoreBackupEnergySequence(),
 			new NothingToDoWarning()
 		);
 		return tree;
 	}
 
 	public static AIBuilder(): Tree {
-		var tree = new Selector();
-		tree.AddSubTree(
-			new MoveAndWithdrawEnergyFormExtensions(),
-			new MoveAndHarvest(),
-			new MoveAndTransferEnergyToTower(),
-			new MoveAndBuildConstruction(),
-			new MoveAndRepairConstruction(),
-			new MoveAndUpgradeController(),
+		var tree = new Selector().AddSubTree(
+			SubTrees.TryBuild(),
+			SubTrees.TryRepair(),
+			SubTrees.TryFillTower(),
+			SubTrees.TryStoreUseableEnergySequence(),
+			SubTrees.TryStoreBackupEnergySequence(),
 			new NothingToDoWarning()
 		);
 		return tree;
 	}
 
 	public static AIMiner(): Tree {
-		var tree = new Selector();
-		tree.AddSubTree(new MoveAndHarvest(), new NothingToDoWarning());
+		var tree = new Selector().AddSubTree(
+			new MoveAndHarvest(),
+			new NothingToDoWarning()
+		);
 		return tree;
 	}
 
 	public static AICarrier(): Tree {
-		let tree = new Selector();
-		{
-			new MoveAndPickupEnergy(), 
-			new MoveAndWithdrawEnergyFromContainer(), 
-			new MoveAndTransferEnergyToSpawn(),
-			new MoveAndTransferEnergyToExtension(),
-			new MoveAndTransferEnergyToStorage(),
+		let tree = new Selector().AddSubTree(
+			SubTrees.TryStoreUseableEnergySequence(),
+			SubTrees.TryStoreBackupEnergySequence(),
+			SubTrees.TryBuild(),
 			new NothingToDoWarning()
-		}
+		)
 		return tree;
 	}
 
@@ -338,15 +201,32 @@ export default class SubTrees {
 		)
 	}
 
+	private static BuildCreepsForLevelSequence(low: number, high: number, level: number): Tree {
+		return new Sequence().AddSubTree(
+			new CheckTotalEnergy(low, high),
+			new Sequence().AddSubTree(
+				this.CheckNumThanBuildBetterCreep("harvester", "Havester"),
+				this.CheckCreepNumCompleteOrBuild("miner", "Miner", 2),
+			),
+			new Selector().AddSubTree(
+				this.CheckNumThenBuildCreepSequence("carrier", "Carrier", level),
+				this.CheckNumThenBuildCreepSequence("upgrader", "Upgrader", level),
+				this.CheckNumThenBuildCreepSequence("builder", "Builder", level)
+			)
+		)
+	}
+
 	private static TryStoreUseableEnergySequence(): Tree {
 		return new Sequence().AddSubTree(
 			new CheckUseableEnergy(false),
 			new Selector().AddSubTree(
 				new Sequence().AddSubTree(
-					new CheckCreepEnergy(false),
+					new CheckCreepEnergyFull(false),
 					new Selector().AddSubTree(
 						new MoveAndPickupEnergy(),
 						new MoveAndWithdrawEnergyFromContainer(),
+						new MoveAndHarvest(),
+						new MoveAndWithdrawEnergyFromStorage(),
 					),
 				),
 				new Selector().AddSubTree(
@@ -362,7 +242,7 @@ export default class SubTrees {
 			new CheckBackupEnergy(false),
 			new Selector().AddSubTree(
 				new Sequence().AddSubTree(
-					new CheckCreepEnergy(false),
+					new CheckCreepEnergyFull(false),
 					new Selector().AddSubTree(
 						new MoveAndPickupEnergy(),
 						new MoveAndWithdrawEnergyFromContainer(),
@@ -371,6 +251,69 @@ export default class SubTrees {
 				new Selector().AddSubTree(
 					new MoveAndTransferEnergyToStorage(),
 				)
+			)
+		)
+	}
+
+	private static TryBuild(): Tree {
+		return new Sequence().AddSubTree(
+			new CheckCurStrategy(true, Strategy.Balance, Strategy.ResourceConstruction, Strategy.NormalConstruction),
+			new CheckNeedBuild(true),
+			new Result(true,new Selector().AddSubTree(
+				new Sequence().AddSubTree(
+					new CheckCreepEnergyFull(false),
+					new MoveAndWithdrawNearestEnergy(),
+				),
+				new MoveAndBuildConstruction(),
+			))
+		)
+	}
+
+	private static TryUpgrade(): Tree {
+		return new Sequence().AddSubTree(
+			new CheckCurStrategy(true, Strategy.Balance, Strategy.NormalWorker, Strategy.NormalConstruction, Strategy.Upgrade),
+			new Result(true, new Selector().AddSubTree(
+				new Sequence().AddSubTree(
+					//new LogAction("CheckCreepBefore", true),
+					new CheckCreepEnergyFull(false),
+					//new LogAction("CheckCreepEnergyAfter", true),
+					new Selector().AddSubTree(
+						//new LogAction("MoveAndWithdrawBefore", false),
+						new MoveAndWithdrawNearestEnergy(),
+						//new LogAction("MoveAndWithdrawFinish", false),
+						new MoveAndHarvest(),
+					),
+					//new LogAction("WithDrawSequenceFinish", false),
+				),	
+				new MoveAndUpgradeController(),
+			)),
+		)
+	}
+
+	private static TryRepair(): Tree {
+		return new Sequence().AddSubTree(
+			new LoopSleepTicks(7, true),
+			new CheckCurStrategy(true, Strategy.Balance),
+			new Result(true, new Selector().AddSubTree(
+				new Sequence().AddSubTree(
+					new CheckCreepEnergyFull(false),
+					new MoveAndWithdrawNearestEnergy(),
+				),
+				new MoveAndRepairConstruction(),
+			))
+		)
+	}
+
+	private static TryFillTower(): Tree {
+		return new Sequence().AddSubTree(
+			new LoopSleepTicks(47, true),
+			new CheckCurStrategy(true, Strategy.Balance),
+			new Selector().AddSubTree(
+				new Sequence().AddSubTree(
+					new CheckCreepEnergyFull(false),
+					new MoveAndWithdrawNearestEnergy(),
+				),
+				new MoveAndTransferEnergyToTower(),
 			)
 		)
 	}

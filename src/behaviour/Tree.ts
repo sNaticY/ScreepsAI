@@ -5,7 +5,7 @@ import { Dictionary } from "lodash";
 
 // ...
 export default abstract class Tree implements TreeNode {
-    
+
     protected SubTrees: Array<Tree>;
 
     public State: Dictionary<Status>;
@@ -15,20 +15,23 @@ export default abstract class Tree implements TreeNode {
         this.State = {};
     }
 
-    abstract Execute(id: string) : Status;
+    abstract Execute(name:string, id: string): Status;
 
-    public AddSubTree(...subtrees:Tree[]) :Tree {
+    public AddSubTree(...subtrees: Tree[]): Tree {
         this.SubTrees.push(...subtrees);
         return this;
     }
 
-    protected ReturnState(state: Status, id:string) :Status {
+    protected ReturnState(state: Status, id: string): Status {
+        if(id == "5b3aaf785c2b1a6b84a93c0a") {
+            console.log("Set Return State", state)
+        }
         this.State[id] = state;
         return state;
     }
 
-    protected ReturnStateBoolean(state: Boolean, id:string): Status{
-        var result = state?Status.Succeed:Status.Failure;
+    protected ReturnStateBoolean(state: Boolean, id: string): Status {
+        var result = state ? Status.Succeed : Status.Failure;
         this.State[id] = result;
         return result;
     }
@@ -43,4 +46,3 @@ export default abstract class Tree implements TreeNode {
         this.State = newStates;
     }
 }
-	

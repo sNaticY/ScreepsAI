@@ -9,9 +9,12 @@ export class Result extends Tree {
 		this.result = result;
 		this.tree = tree;
 	}
-	public Execute(id:string): Status {
+	public Execute(id: string): Status {
 		if (this.tree) {
-			this.tree.Execute(id)
+			var res = this.tree.Execute("Result-", id)
+			if (res == Status.Running) {
+				return Status.Running;
+			}
 		}
 		return this.result ? Status.Succeed : Status.Failure;
 	}
@@ -23,8 +26,17 @@ export class NotNode extends Tree {
 		super();
 		this.tree = tree;
 	}
-	public Execute(id:string): Status {
-		return this.tree.Execute(id) == Status.Succeed?Status.Failure:Status.Succeed;
+	public Execute(id: string): Status {
+		var result = this.tree.Execute("NotNode-", id);
+		switch (result) {
+			case Status.Succeed:
+				return Status.Failure;
+			case Status.Failure:
+				return Status.Succeed;
+
+			default:
+				return Status.Running;
+		}
 	}
 }
 
@@ -39,14 +51,13 @@ export class Repeat extends Tree {
 		this.failStop = failStop;
 	}
 
-	public Execute(id:string): Status {
-        for (let i = 0; i < this.num; i++) {
-            var result = this.tree.Execute(id);
-            if(this.failStop && result == Status.Failure)
-            {
-                return Status.Failure;
-            }
-        }
+	public Execute(id: string): Status {
+		for (let i = 0; i < this.num; i++) {
+			var result = this.tree.Execute("Repeat", id);
+			if (this.failStop && result == Status.Failure) {
+				return Status.Failure;
+			}
+		}
 		return Status.Succeed;
 	}
 }
