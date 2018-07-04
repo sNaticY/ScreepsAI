@@ -92,14 +92,14 @@ export default class SmallTrees {
 
     public static RepairTillEmpty(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => BaseActions.IfCreepEnergyFull(Board.CurrentCreep)),
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep)),
             new Convert(true, Status.Succeed, Status.Running, new MoveAndRepairConstruction())
         );
     }
 
     public static FillTowerTillEmpty(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => BaseActions.IfCreepEnergyFull(Board.CurrentCreep)),
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep)),
             new Convert(true, Status.Succeed, Status.Running, new MoveAndTransferEnergyToTower())
         );
     }

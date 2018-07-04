@@ -17,6 +17,7 @@ import { CheckCondition } from "./Actions/CheckCondition";
 import { CheckCreepNum } from "./Actions/CheckCreepNum";
 import { CheckCurStrategy } from "./Actions/CheckCurStrategy";
 import { CheckNearestFlag } from "./Actions/CheckNearestFlag";
+import { LogAction } from "./Actions/LogAction";
 import { LoopSleepTicks } from "./Actions/LoopSleepTicks";
 import { MoveAndHarvest } from "./Actions/MoveAndHarvest";
 import { NothingToDoWarning } from "./Actions/NotingToDoWarning";
@@ -118,8 +119,8 @@ export default class SubTrees {
     public static AIBuilder(): Tree {
         const tree = new Selector().AddSubTree(
             SubTrees.TryBuildOnce(),
-            SubTrees.TryRepairOnce(),
             SubTrees.TryFillTower(),
+            SubTrees.TryRepairOnce(),
             SubTrees.TryStoreUseableEnergyOnce(),
             SubTrees.TryStoreBackupEnergyOnce(),
             new NothingToDoWarning()
@@ -254,7 +255,6 @@ export default class SubTrees {
 
     private static TryRepairOnce(): Tree {
         return new Sequence().AddSubTree(
-            new LoopSleepTicks(7, true),
             new CheckCurStrategy(true, Strategy.Balance),
             new Selector().AddSubTree(
                 new CheckCondition(false, () => BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep)),
@@ -267,6 +267,7 @@ export default class SubTrees {
                     Strategy.NormalConstruction,
                     Strategy.Upgrade
                 ),
+                // new LogAction("Try Repair", false),
                 SmallTrees.RepairTillEmpty()
             )
         );
@@ -274,7 +275,6 @@ export default class SubTrees {
 
     private static TryFillTower(): Tree {
         return new Sequence().AddSubTree(
-            new LoopSleepTicks(47, true),
             new CheckCurStrategy(true, Strategy.Balance),
             new Selector().AddSubTree(
                 new CheckCondition(false, () => BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep)),

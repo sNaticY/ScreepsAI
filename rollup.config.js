@@ -22,6 +22,7 @@ export default {
     sourcemap: true
   },
 
+  external: [ 'lodash' ],
   plugins: [
     clear({ targets: ["dist"] }),
     resolve(),

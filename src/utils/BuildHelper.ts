@@ -58,6 +58,10 @@ const BodyParts: Dictionary<List<BodyPartConstant[]>> = {
         [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
         [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
     ],
+    probe: [
+        [],
+        []
+    ],
     worker: [
         [],
         // 300, 4
