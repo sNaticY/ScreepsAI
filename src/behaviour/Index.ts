@@ -1,10 +1,10 @@
 import Board from "./Board";
+import Parallel from "./Composites/Parallel";
+import Selector from "./Composites/Selector";
+import Sequence from "./Composites/Sequence";
 import Node from "./Node";
-import Parallel from "./Parallel";
-import Selector from "./Selector";
-import Sequence from "./Sequence";
-import Tree from "./Tree";
 import SubTrees from "./SubTrees";
+import Tree from "./Tree";
 
 export {
     Board,
@@ -13,5 +13,5 @@ export {
     Selector,
     Sequence,
     Tree,
-    SubTrees,
+    SubTrees
 };

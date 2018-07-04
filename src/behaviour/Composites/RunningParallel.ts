@@ -1,7 +1,6 @@
-
-import Status from "./Status";
-import Tree from "./Tree";
 import { Dictionary } from "lodash";
+import Status from "./../Status";
+import Tree from "../Tree";
 
 export default class RunningParallel extends Tree {
     private succeed: number;
@@ -24,16 +23,14 @@ export default class RunningParallel extends Tree {
     }
 
     public Execute(name: string, id: string): Status {
-        var hasRunning = false;
-        for (var tree of this.SubTrees) {
-            var result = tree.Execute(name + "parallel-", id)
-            if (result == Status.Succeed) {
+        let hasRunning = false;
+        for (const tree of this.SubTrees) {
+            const result = tree.Execute(name + "parallel-", id);
+            if (result === Status.Succeed) {
                 this.succeedNum[id]++;
-            }
-            else if (result == Status.Failure) {
+            } else if (result === Status.Failure) {
                 this.failureNum[id]++;
-            }
-            else {
+            } else {
                 hasRunning = true;
             }
 
@@ -41,7 +38,7 @@ export default class RunningParallel extends Tree {
                 if (this.succeedNum[id] >= this.succeed) {
                     this.succeedNum[id] = 0;
                     this.failureNum[id] = 0;
-                    return this.ReturnState(Status.Succeed, id)
+                    return this.ReturnState(Status.Succeed, id);
                 }
                 if (this.failureNum[id] >= this.failure) {
                     this.succeedNum[id] = 0;
@@ -51,25 +48,21 @@ export default class RunningParallel extends Tree {
             }
         }
         if (hasRunning) {
-            return this.ReturnState(Status.Running, id)
-        }
-        else {
+            return this.ReturnState(Status.Running, id);
+        } else {
             if (this.succeedNum[id] >= this.succeed) {
                 this.succeedNum[id] = 0;
                 this.failureNum[id] = 0;
-                return this.ReturnState(Status.Succeed, id)
-            }
-            else if (this.failureNum[id] >= this.failure) {
+                return this.ReturnState(Status.Succeed, id);
+            } else if (this.failureNum[id] >= this.failure) {
                 this.succeedNum[id] = 0;
                 this.failureNum[id] = 0;
                 return this.ReturnState(Status.Failure, id);
-            }
-            else {
+            } else {
                 this.succeedNum[id] = 0;
                 this.failureNum[id] = 0;
                 return this.ReturnState(this.default, id);
             }
         }
-
     }
 }

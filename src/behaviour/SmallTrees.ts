@@ -1,111 +1,106 @@
-import Tree from "./Tree";
-import Board, { Strategy } from "./Board"
-import Sequence from "./Sequence";
-import RunningParallel from "./RunningParallel";
+import BaseActions from "./Actions/BaseActions";
+import { CheckCondition } from "./Actions/CheckCondition";
+import { MoveAndBuildConstruction } from "./Actions/MoveAndBuildConstruction";
+import { MoveAndBuildExtension } from "./Actions/MoveAndBuildExtension";
+import { MoveAndHarvest } from "./Actions/MoveAndHarvest";
+import { MoveAndPickupEnergy } from "./Actions/MoveAndPickupEnergy";
+import { MoveAndRepairConstruction } from "./Actions/MoveAndRepariConstruction";
+import { MoveAndTransferEnergyToExtension } from "./Actions/MoveAndTransferEnergyToExtension";
+import { MoveAndTransferEnergyToSpawn } from "./Actions/MoveAndTransferEnergyToSpawn";
+import { MoveAndTransferEnergyToStorage } from "./Actions/MoveAndTransferEnergyToStorage";
+import { MoveAndTransferEnergyToTower } from "./Actions/MoveAndTransferEnergyToTower";
+import { MoveAndUpgradeController } from "./Actions/MoveAndUpgradeController";
+import { MoveAndWithdrawEnergyFromContainer } from "./Actions/MoveAndWithdrawEnergyFromContainer";
+import { MoveAndWithdrawEnergyFromStorage } from "./Actions/MoveAndWithdrawEnergyFromStorage";
+import { MoveAndWithdrawNearestAllEnergy } from "./Actions/MoveAndWithdrawNearestAllEnergy";
+import { WithdrawNearestEnergWithoutMove } from "./Actions/WithdrawNearestEnergyWithoutMove";
+import Board, { Strategy } from "./Board";
+import RunningParallel from "./Composites/RunningParallel";
+import RunningSelector from "./Composites/RunningSelector";
+import Selector from "./Composites/Selector";
+import { Convert } from "./Decorators/Convert";
 import Status from "./Status";
-import Selector from "./Selector";
-import RunningSelector from "./RunningSelector";
-import BaseActions from "./BaseActions";
-import { Convert } from "./Decorators";
-
-import {
-    CheckCondition,
-    MoveAndPickupEnergy,
-    MoveAndWithdrawEnergyFromContainer,
-    MoveAndHarvest,
-    MoveAndWithdrawEnergyFromStorage,
-    CheckUseableEnergy,
-    MoveAndBuildExtension,
-    MoveAndTransferEnergyToExtension,
-    MoveAndTransferEnergyToSpawn,
-    MoveAndUpgradeController,
-    MoveAndTransferEnergyToStorage,
-    MoveAndWithdrawNearestAllEnergy,
-    MoveAndBuildConstruction,
-    WithdrawNearestEnergWithoutMove,
-    MoveAndRepairConstruction,
-    MoveAndTransferEnergyToTower,
-} from "./Actions";
+import Tree from "./Tree";
 
 export default class SmallTrees {
     public static GetEnergyTillFullForStoreUseable(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyFull(Board.CurrentCreep) }),
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyFull(Board.CurrentCreep)),
             new Convert(true, Status.Succeed, Status.Running, new Selector().AddSubTree(
                 new MoveAndPickupEnergy(),
                 new MoveAndWithdrawEnergyFromContainer(),
                 new MoveAndHarvest(),
-                new MoveAndWithdrawEnergyFromStorage(),
-            )),
-        )
+                new MoveAndWithdrawEnergyFromStorage()
+            ))
+        );
     }
 
     public static StoreUseableEnergyTillEmpty(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep)),
             new Convert(true, Status.Succeed, Status.Running, new Selector().AddSubTree(
                 new MoveAndTransferEnergyToSpawn(),
-                new MoveAndTransferEnergyToExtension(),
-            )),
-        )
+                new MoveAndTransferEnergyToExtension()
+            ))
+        );
     }
 
     public static GetEnergyTillFullForStoreBackup(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyFull(Board.CurrentCreep) }),
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyFull(Board.CurrentCreep)),
             new Convert(true, Status.Succeed, Status.Running, new Selector().AddSubTree(
                 new MoveAndPickupEnergy(),
-                new MoveAndWithdrawEnergyFromContainer(),
-            )),
-        )
+                new MoveAndWithdrawEnergyFromContainer()
+            ))
+        );
     }
 
     public static StoreBackupEnergyTillEmpty(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
-            new Convert(true, Status.Succeed, Status.Running, new MoveAndTransferEnergyToStorage()),
-        )
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep)),
+            new Convert(true, Status.Succeed, Status.Running, new MoveAndTransferEnergyToStorage())
+        );
     }
 
     public static GetEnergyTillFullForWork(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyFull(Board.CurrentCreep) }),
-            new Convert(true, Status.Succeed, Status.Running, new MoveAndWithdrawNearestAllEnergy()),
-        )
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyFull(Board.CurrentCreep)),
+            new Convert(true, Status.Succeed, Status.Running, new MoveAndWithdrawNearestAllEnergy())
+        );
     }
 
     public static BuildTillEmpty(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep)),
             new Convert(true, Status.Succeed, Status.Running, new Selector().AddSubTree(
                 new MoveAndBuildExtension(),
-                new MoveAndBuildConstruction(),
+                new MoveAndBuildConstruction()
 
-            )),
-        )
+            ))
+        );
     }
 
     public static UpgradeAndWithdrawTillEmpty(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep) }),
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyEmpty(Board.CurrentCreep)),
             new Convert(true, Status.Succeed, Status.Running, new RunningParallel(1, 2, false, true).AddSubTree(
                 new MoveAndUpgradeController(),
-                new WithdrawNearestEnergWithoutMove(),
-            )),
-        )
+                new WithdrawNearestEnergWithoutMove()
+            ))
+        );
     }
 
     public static RepairTillEmpty(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyFull(Board.CurrentCreep) }),
-            new Convert(true, Status.Succeed, Status.Running, new MoveAndRepairConstruction()),
-        )
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyFull(Board.CurrentCreep)),
+            new Convert(true, Status.Succeed, Status.Running, new MoveAndRepairConstruction())
+        );
     }
 
     public static FillTowerTillEmpty(): Tree {
         return new RunningSelector().AddSubTree(
-            new CheckCondition(true, () => { return BaseActions.IfCreepEnergyFull(Board.CurrentCreep) }),
-            new Convert(true, Status.Succeed, Status.Running, new MoveAndTransferEnergyToTower()),
-        )
+            new CheckCondition(true, () => BaseActions.IfCreepEnergyFull(Board.CurrentCreep)),
+            new Convert(true, Status.Succeed, Status.Running, new MoveAndTransferEnergyToTower())
+        );
     }
 }

@@ -1,6 +1,6 @@
 export default class Status {
-    static Succeed: string = "Succeed";
-    static Failure: string = "Failure";
-    static Running: string = "Running";
-    static None: string = "None";
+    public static Succeed: string = "Succeed";
+    public static Failure: string = "Failure";
+    public static Running: string = "Running";
+    public static None: string = "None";
 }

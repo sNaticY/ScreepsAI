@@ -1,12 +1,11 @@
+import { Dictionary } from "lodash";
 import TreeNode from "./Node";
 import Status from "./Status";
-import { Dictionary } from "lodash";
-
 
 // ...
 export default abstract class Tree implements TreeNode {
 
-    protected SubTrees: Array<Tree>;
+    protected SubTrees: Tree[];
 
     public State: Dictionary<Status>;
 
@@ -15,7 +14,7 @@ export default abstract class Tree implements TreeNode {
         this.State = {};
     }
 
-    abstract Execute(name: string, id: string): Status;
+    public abstract Execute(name: string, id: string): Status;
 
     public AddSubTree(...subtrees: Tree[]): Tree {
         this.SubTrees.push(...subtrees);
@@ -27,16 +26,16 @@ export default abstract class Tree implements TreeNode {
         return state;
     }
 
-    protected ReturnStateBoolean(state: Boolean, id: string): Status {
-        var result = state ? Status.Succeed : Status.Failure;
+    protected ReturnStateBoolean(state: boolean, id: string): Status {
+        const result = state ? Status.Succeed : Status.Failure;
         this.State[id] = result;
         return result;
     }
 
     public ClearStates() {
-        var newStates: Dictionary<Status> = {};
+        const newStates: Dictionary<Status> = {};
         for (const index in this.State) {
-            if (this.State.hasOwnProperty(index) && this.State[index] == Status.Running) {
+            if (this.State.hasOwnProperty(index) && this.State[index] === Status.Running) {
                 newStates[index] = Status.Running;
             }
         }
