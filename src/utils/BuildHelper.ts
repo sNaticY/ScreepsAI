@@ -1,7 +1,6 @@
 import Board from "behaviour/Board";
 import { Dictionary, List, random } from "lodash";
-
-type PosFilter = (pos: RoomPosition) => boolean;
+import { PosFilter } from "screeps/TypeDefs";
 
 const BodyParts: Dictionary<List<BodyPartConstant[]>> = {
     carrier: [
