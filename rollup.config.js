@@ -18,6 +18,7 @@ export default {
   input: "src/main.ts",
   output: {
     file: "/Users/snatic/Library/Application Support/Screeps/scripts/192_168_178_26___21025/default/main.js",
+    // file: "/Users/snatic/Library/Application Support/Screeps/scripts/screeps.com/default/main.js",
     format: "cjs",
     sourcemap: true
   },
