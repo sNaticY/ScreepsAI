@@ -21,8 +21,8 @@ export class CheckNearestFlag extends Tree {
         const room = Board.CurrentRoom;
         if (Game.flags.MinFlag) {
             Game.flags.MinFlag.remove();
-            room.memory.hasRoadBuild = false;
-            room.memory.hasMidFlagFound = false;
+            // room.memory.hasRoadBuild = false;
+            // room.memory.hasMidFlagFound = false;
 
             const sites = room.find(FIND_MY_CONSTRUCTION_SITES);
 

@@ -9,7 +9,6 @@ import { AdjustStrategy } from "./Actions/AdjustStrategy";
 import { BuildBetterCreep } from "./Actions/BuildBetterCreep";
 import { BuildContainerNearSource } from "./Actions/BuildContainerNearSource";
 import { BuildCreep } from "./Actions/BuildCreep";
-import { BuildExtensionsByPath } from "./Actions/BuildExtensionsByPath";
 import { BuildRoadFromMinFlag } from "./Actions/BuildRoadFromMinFlag";
 import { BuildStorageNearController } from "./Actions/BuildStorageNearController";
 import { BuildTowerInMiddle } from "./Actions/BuildTowerInMiddle";
@@ -40,7 +39,7 @@ export default class SubTrees {
         sequence.AddSubTree(
             new CheckNearestFlag(),
             new BuildRoadFromMinFlag(),
-            new BuildExtensionsByPath(),
+            // new BuildExtensionsByPath(),
             new BuildContainerNearSource(),
             new BuildTowerInMiddle(),
             new BuildStorageNearController()
@@ -109,8 +108,8 @@ export default class SubTrees {
             // new LogAction("Try Upgrade Before", false),
             SubTrees.TryUpgradeOnce(),
             // new LogAction("Try Upgrade Done", false),
-            SubTrees.TryStoreUseableEnergyOnce(),
-            SubTrees.TryStoreBackupEnergyOnce(),
+            // SubTrees.TryStoreUseableEnergyOnce(),
+            // SubTrees.TryStoreBackupEnergyOnce(),
             new NothingToDoWarning()
         );
         return tree;

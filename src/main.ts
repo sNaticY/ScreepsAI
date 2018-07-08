@@ -1,10 +1,13 @@
 
 import { Board, SubTrees } from "behaviour/index";
+import { Empire } from "screeps/Empire";
+import { Province } from "screeps/Province";
+import { RoomPlaner } from "screeps/RoomPlaner";
 import { ErrorMapper } from "utils/ErrorMapper";
-import { RoomPlan } from "utils/RoomPlan";
+// import { RoomPlan } from "utils/RoomPlan";
 
 const aiBrain = SubTrees.AIBrain();
-const aiConstrucion = SubTrees.AIConstruction();
+// const aiConstrucion = SubTrees.AIConstruction();
 const aiSpawn = SubTrees.AISpawn();
 const aiTower = SubTrees.AITower();
 const aiHarvester = SubTrees.AIHarvester();
@@ -13,7 +16,11 @@ const aiBuilder = SubTrees.AIBuilder();
 const aiMiner = SubTrees.AIMiner();
 const aiCarrier = SubTrees.AICarrier();
 
-// let isFindFlag: boolean = false;
+const firstRoom = Game.spawns.Spawn1.room;
+// Initialize All Stuffs
+Empire.Initialize();
+Province.Initialize(firstRoom.name, Game.spawns.Spawn1.room.name);
+RoomPlaner.Initialize(firstRoom);
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
@@ -26,25 +33,35 @@ export const loop = ErrorMapper.wrapLoop(() => {
     //     for (const site of sites) {
     //         site.remove();
     //     }
+    //     let origin1: RoomPosition | null = null;
+    //     let origin2: RoomPosition | null = null;
     //     if (curRoom && curRoom.controller) {
     //         // tslint:disable-next-line:max-line-length
-    //         const pos1 = RoomPlan.FindEmptyCubeAreaAround(curRoom.controller.pos, curRoom, 5, 2, (p) => {
-    //             return true;
-    //         });
-    //         if (pos1) {
-    //             console.log(pos1);
-    //             const positions = RoomPlan.FindRoadPositions(pos1, curRoom);
-    //             for (const pos of positions) {
-    //                 curRoom.createConstructionSite(pos, STRUCTURE_ROAD);
-    //             }
-
-    //             const pos2 = RoomPlan.FindEmptyCubeAreaAround(curRoom.controller.pos, curRoom, 3, 4, (p) => {
-    //                 return RoomPlan.NotInRange(p, pos1, 5);
+    //         const spawnPos = Game.spawns.spawn1.pos;
+    //         const pos = curRoom.getPositionAt(spawnPos.x, spawnPos.y + 1);
+    //         if (pos && RoomPlan.CheckIfCubeEmpty(pos, curRoom, 5, null)) {
+    //             origin1 = pos;
+    //         } else {
+    //             origin1 = RoomPlan.FindEmptyCubeAreaAround(curRoom.controller.pos, curRoom, 5, 2, (p) => {
+    //                 return true;
     //             });
-    //             if (pos2) {
-    //                 console.log(pos2);
-    //                 curRoom.createFlag(pos2);
+    //         }
+
+    //         if (origin1) {
+    //             console.log(origin1);
+    //             origin2 = RoomPlan.FindEmptyCubeAreaAround(curRoom.controller.pos, curRoom, 3, 4, (p) => {
+    //                 return RoomPlan.NotInRange(p, origin1, 5);
+    //             });
+    //         }
+
+    //         if (origin1) {
+    //             const positions = RoomPlan.FindRoadPositions(origin1, curRoom);
+    //             for (const position of positions) {
+    //                 curRoom.createConstructionSite(position, STRUCTURE_ROAD);
     //             }
+    //         }
+    //         if (origin2) {
+    //             curRoom.createFlag(origin2);
     //         }
     //     }
     //     console.log("finish find flag");
