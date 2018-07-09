@@ -80,13 +80,29 @@ export class RoomPlanUtils {
         return positions;
     }
 
-    public static FindStoragetPosition(origin: RoomPosition, room: Room): RoomPosition|null {
+    public static FindStoragePositions(origin: RoomPosition, room: Room): RoomPosition[] {
+        const positions: RoomPosition[] = [];
         const pos = room.getPositionAt(origin.x, origin.y + 3);
-        if (pos) {return pos; }
-        return null;
+        if (pos) {
+            positions.push(pos);
+        }
+        return positions;
     }
 
-    public static FindContainerPositions(middlePos: RoomPosition, room: Room): RoomPosition[] {
-        throw new Error("Method not implemented.");
+    public static FindContainerPositions(origin: RoomPosition, room: Room): RoomPosition[] {
+        const positions: RoomPosition[] = [];
+        const sources = room.find(FIND_SOURCES);
+        for (const source of sources) {
+            const pos = RoomMapUtils.FindCube(source.pos, room, 1, (p, i): boolean => {
+                const structures = p.lookFor(LOOK_STRUCTURES);
+                return (structures.length === 0 ||
+                    (structures.length === 1 && structures[0].structureType === STRUCTURE_ROAD));
+            });
+            if (pos.length > 0) {
+                positions.push(pos[0]);
+            }
+        }
+        positions.push(origin);
+        return positions;
     }
 }

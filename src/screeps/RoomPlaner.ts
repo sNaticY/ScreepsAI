@@ -25,7 +25,7 @@ export class RoomPlaner {
             [STRUCTURE_CONTAINER]: RoomPlanUtils.FindContainerPositions(middlePos, room),
             [STRUCTURE_EXTENSION]: RoomPlanUtils.FindExtensionPositions(middlePos, room),
             [STRUCTURE_TOWER]: RoomPlanUtils.FindTowerPositions(origin1, origin2, room),
-            [STRUCTURE_STORAGE]: RoomPlanUtils.FindTowerPositions(origin1, origin2, room)
+            [STRUCTURE_STORAGE]: RoomPlanUtils.FindStoragePositions(origin2, room)
         }; // RoomPlaner.CalcStructurePlan(room);
         const curSpawnTick = 0;
         const roomPlanDirty = true;
