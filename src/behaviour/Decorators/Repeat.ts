@@ -1,4 +1,4 @@
-import Status from "./../Status";
+import Status from "../Status";
 import Tree from "../Tree";
 export class Repeat extends Tree {
     public tree: Tree;

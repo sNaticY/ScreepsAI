@@ -1,5 +1,5 @@
 
-import Status from "./../Status";
+import Status from "../Status";
 import Tree from "../Tree";
 
 export default class Sequence extends Tree {

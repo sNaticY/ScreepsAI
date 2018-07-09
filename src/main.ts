@@ -1,5 +1,5 @@
 
-import { Board, SubTrees } from "behaviour/index";
+import { Board, SubTrees } from "behaviour";
 import { Empire } from "screeps/Empire";
 import { Province } from "screeps/Province";
 import { RoomPlaner } from "screeps/RoomPlaner";
@@ -17,7 +17,7 @@ const aiMiner = SubTrees.AIMiner();
 const aiCarrier = SubTrees.AICarrier();
 
 const firstRoom = Game.spawns.Spawn1.room;
-// Initialize All Stuffs
+// Initialize First Room Stuffs
 Empire.Initialize();
 Province.Initialize(firstRoom.name, Game.spawns.Spawn1.room.name);
 RoomPlaner.Initialize(firstRoom);

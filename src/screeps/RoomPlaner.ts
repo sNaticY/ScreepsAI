@@ -1,5 +1,6 @@
+import { RoomMapUtils } from "utils/RoomMapUtils";
+import { RoomPlanUtils } from "utils/RoomPlanUtils";
 import { Province } from "./Province";
-import { RoomMap } from "./RoomMap";
 
 export class RoomPlaner {
     public static Initialize(room: Room) {
@@ -7,19 +8,36 @@ export class RoomPlaner {
 
         const provinceName = provinceAndPlan.provinceName;
         const plan = provinceAndPlan.roomPlan;
-        const middlePos = RoomMap.CalcMiddlePosition(room);
-        console.log(middlePos);
+        const middlePos = RoomMapUtils.CalcMiddlePosition(room);
         if (middlePos == null) {
             return;
         }
+        const originPositions = RoomMapUtils.CalcOriginPositions(middlePos, room);
+        const origin1 = originPositions.origin1;
+        const origin2 = originPositions.origin2;
+        console.log(middlePos, origin1, origin2);
+        if (origin1 == null || origin2 == null) {
+            return;
+        }
         room.createFlag(middlePos, "MiddleFlag");
-        const structurePlan = {}; // RoomPlaner.CalcStructurePlan(room);
+        const structurePlan = {
+            [STRUCTURE_ROAD]: RoomPlanUtils.FindRoadPositions(origin1, room),
+            [STRUCTURE_CONTAINER]: RoomPlanUtils.FindContainerPositions(middlePos, room),
+            [STRUCTURE_EXTENSION]: RoomPlanUtils.FindExtensionPositions(middlePos, room),
+            [STRUCTURE_TOWER]: RoomPlanUtils.FindTowerPositions(origin1, origin2, room),
+            [STRUCTURE_STORAGE]: RoomPlanUtils.FindTowerPositions(origin1, origin2, room)
+        }; // RoomPlaner.CalcStructurePlan(room);
         const curSpawnTick = 0;
         const roomPlanDirty = true;
         const state: RoomState = "CORE";
         const spawning = {};
 
-        // room.memory = {provinceName, plan, curSpawnTick, roomPlanDirty, structurePlan, state, spawning, middlePos};
+        room.memory = {
+            // tslint:disable-next-line:object-literal-sort-keys
+            provinceName, plan, middlePos,
+            origin1Pos: origin1,
+            origin2Pos: origin2,
+            curSpawnTick, roomPlanDirty, structurePlan, state, spawning };
     }
 
     public Execute(room: Room) {

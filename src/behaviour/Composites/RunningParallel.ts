@@ -1,5 +1,5 @@
 import { Dictionary } from "lodash";
-import Status from "./../Status";
+import Status from "../Status";
 import Tree from "../Tree";
 
 export default class RunningParallel extends Tree {

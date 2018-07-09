@@ -1,7 +1,7 @@
 import { random } from "lodash";
 import { BuildHelper } from "utils/BuildHelper";
-import Board from "./../Board";
-import Status from "./../Status";
+import Board from "../Board";
+import Status from "../Status";
 
 export default class BaseActions {
     public static BuildCreep(role: string, name: string, level: number): Status {
