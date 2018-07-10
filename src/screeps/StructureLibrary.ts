@@ -4,25 +4,25 @@ export class StructureLibrary {
     public StructureLevel: Array<Dictionary<number>> = [
         // Level 0
         {
-            [STRUCTURE_ROAD]: 100,
-            [STRUCTURE_CONTAINER]: 5
+            [STRUCTURE_ROAD]: 0,
+            [STRUCTURE_CONTAINER]: 2
         },
         // Level 1
         {
-            [STRUCTURE_ROAD]: 100,
-            [STRUCTURE_CONTAINER]: 5,
+            [STRUCTURE_ROAD]: 0,
+            [STRUCTURE_CONTAINER]: 2,
             [STRUCTURE_SPAWN]: 1
         },
         // Level 2
         {
-            [STRUCTURE_ROAD]: 100,
-            [STRUCTURE_CONTAINER]: 5,
+            [STRUCTURE_ROAD]: 25,
+            [STRUCTURE_CONTAINER]: 2,
             [STRUCTURE_SPAWN]: 1,
             [STRUCTURE_EXTENSION]: 5
         },
         // Level 3
         {
-            [STRUCTURE_ROAD]: 100,
+            [STRUCTURE_ROAD]: 25,
             [STRUCTURE_CONTAINER]: 5,
             [STRUCTURE_SPAWN]: 1,
             [STRUCTURE_EXTENSION]: 10,
@@ -30,7 +30,7 @@ export class StructureLibrary {
         },
         // Level 4
         {
-            [STRUCTURE_ROAD]: 100,
+            [STRUCTURE_ROAD]: 37,
             [STRUCTURE_CONTAINER]: 5,
             [STRUCTURE_SPAWN]: 1,
             [STRUCTURE_EXTENSION]: 20,
@@ -39,7 +39,7 @@ export class StructureLibrary {
         },
         // Level 5
         {
-            [STRUCTURE_ROAD]: 100,
+            [STRUCTURE_ROAD]: 37,
             [STRUCTURE_CONTAINER]: 5,
             [STRUCTURE_SPAWN]: 1,
             [STRUCTURE_EXTENSION]: 30,
@@ -48,7 +48,7 @@ export class StructureLibrary {
         },
         // Level 6
         {
-            [STRUCTURE_ROAD]: 100,
+            [STRUCTURE_ROAD]: 37,
             [STRUCTURE_CONTAINER]: 5,
             [STRUCTURE_SPAWN]: 1,
             [STRUCTURE_EXTENSION]: 40,
@@ -57,7 +57,7 @@ export class StructureLibrary {
         },
         // Level 7
         {
-            [STRUCTURE_ROAD]: 100,
+            [STRUCTURE_ROAD]: 37,
             [STRUCTURE_CONTAINER]: 5,
             [STRUCTURE_SPAWN]: 2,
             [STRUCTURE_EXTENSION]: 50,
@@ -66,7 +66,7 @@ export class StructureLibrary {
         },
         // Level 8
         {
-            [STRUCTURE_ROAD]: 100,
+            [STRUCTURE_ROAD]: 37,
             [STRUCTURE_CONTAINER]: 5,
             [STRUCTURE_SPAWN]: 3,
             [STRUCTURE_EXTENSION]: 60,
