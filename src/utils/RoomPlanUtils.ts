@@ -3,43 +3,45 @@ import { RoomMapUtils } from "./RoomMapUtils";
 
 export class RoomPlanUtils {
 
-    public static FindRoadPositions(originPos: RoomPosition, room: Room): RoomPosition[] {
+    public static FindRoadPositions(origin1Pos: RoomPosition, origin2Pos: RoomPosition, room: Room): RoomPosition[] {
         const positions: RoomPosition[] = [];
-        positions.push(originPos);
-        positions.push(...RoomMapUtils.FindRhumbus(originPos, room, 2, null));
-        for (let i = 0; i < 3; i++) {
-            const pos1 = room.getPositionAt(originPos.x + (2 + i), originPos.y + (2 + i));
-            if (pos1) {
-                positions.push(pos1);
-            }
-            const pos2 = room.getPositionAt(originPos.x + (2 + i), originPos.y - (2 + i));
-            if (pos2) {
-                positions.push(pos2);
-            }
-            const pos3 = room.getPositionAt(originPos.x - (2 + i), originPos.y + (2 + i));
-            if (pos3) {
-                positions.push(pos3);
-            }
-            const pos4 = room.getPositionAt(originPos.x - (2 + i), originPos.y - (2 + i));
-            if (pos4) {
-                positions.push(pos4);
-            }
-        }
-        const pos5 = room.getPositionAt(originPos.x - 4, originPos.y);
+        positions.push(origin1Pos);
+        positions.push(...RoomMapUtils.FindRhumbus(origin1Pos, room, 2, null));
+
+        const pos5 = room.getPositionAt(origin1Pos.x - 4, origin1Pos.y);
         if (pos5) {
             positions.push(...RoomMapUtils.FindRhumbus(pos5, room, 1, null));
         }
-        const pos6 = room.getPositionAt(originPos.x + 4, originPos.y);
+        const pos6 = room.getPositionAt(origin1Pos.x + 4, origin1Pos.y);
         if (pos6) {
             positions.push(...RoomMapUtils.FindRhumbus(pos6, room, 1, null));
         }
-        const pos7 = room.getPositionAt(originPos.x, originPos.y - 4);
+        const pos7 = room.getPositionAt(origin1Pos.x, origin1Pos.y - 4);
         if (pos7) {
             positions.push(...RoomMapUtils.FindRhumbus(pos7, room, 1, null));
         }
-        const pos8 = room.getPositionAt(originPos.x, originPos.y + 4);
+        const pos8 = room.getPositionAt(origin1Pos.x, origin1Pos.y + 4);
         if (pos8) {
             positions.push(...RoomMapUtils.FindRhumbus(pos8, room, 1, null));
+        }
+
+        for (let i = 0; i < 3; i++) {
+            const pos1 = room.getPositionAt(origin1Pos.x + (2 + i), origin1Pos.y + (2 + i));
+            if (pos1) {
+                positions.push(pos1);
+            }
+            const pos2 = room.getPositionAt(origin1Pos.x + (2 + i), origin1Pos.y - (2 + i));
+            if (pos2) {
+                positions.push(pos2);
+            }
+            const pos3 = room.getPositionAt(origin1Pos.x - (2 + i), origin1Pos.y + (2 + i));
+            if (pos3) {
+                positions.push(pos3);
+            }
+            const pos4 = room.getPositionAt(origin1Pos.x - (2 + i), origin1Pos.y - (2 + i));
+            if (pos4) {
+                positions.push(pos4);
+            }
         }
 
         return positions;
