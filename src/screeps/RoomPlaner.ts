@@ -21,7 +21,7 @@ export class RoomPlaner {
         }
         room.createFlag(middlePos, "MiddleFlag");
         const structurePlan = {
-            [STRUCTURE_ROAD]: RoomPlanUtils.FindRoadPositions(origin1, room),
+            [STRUCTURE_ROAD]: RoomPlanUtils.FindRoadPositions(origin1, origin2, room),
             [STRUCTURE_CONTAINER]: RoomPlanUtils.FindContainerPositions(middlePos, room),
             [STRUCTURE_EXTENSION]: RoomPlanUtils.FindExtensionPositions(middlePos, room),
             [STRUCTURE_TOWER]: RoomPlanUtils.FindTowerPositions(origin1, origin2, room),
@@ -29,6 +29,7 @@ export class RoomPlaner {
         }; // RoomPlaner.CalcStructurePlan(room);
         const curSpawnTick = 0;
         const roomPlanDirty = true;
+        const roomTaskDirty = true;
         const state: RoomState = "CORE";
         const spawning = {};
 
@@ -37,20 +38,8 @@ export class RoomPlaner {
             provinceName, plan, middlePos,
             origin1Pos: origin1,
             origin2Pos: origin2,
-            curSpawnTick, roomPlanDirty, structurePlan, state, spawning };
-    }
-
-    public Execute(room: Room) {
-        if (!room.memory.roomPlanDirty) {
-            return;
-        }
-
-        room.memory.roomPlanDirty = false;
-    }
-
-    private static ChangeRoomPlan(room: Room, plan: RoomPlan) {
-        room.memory.plan = plan;
-        room.memory.roomPlanDirty = true;
+            curSpawnTick, roomPlanDirty, roomTaskDirty, structurePlan, state, spawning
+        };
     }
 
     private static CalcRoomProvinceNameAndRoomPlan(room: Room): {provinceName: string, roomPlan: RoomPlan} {
@@ -75,7 +64,9 @@ export class RoomPlaner {
         const sourceCount = room.find(FIND_SOURCES).length;
         if (routeLength <= 1) {
             provinceName = minCapitalName;
-            if (sourceCount >= 2) {
+            if (room.name === minCapitalName) {
+                roomPlan = "MAJOR";
+            } else if (sourceCount >= 2) {
                 roomPlan = "MINOR";
             } else {
                 roomPlan = "JONIOR";
