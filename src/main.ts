@@ -3,6 +3,7 @@ import { Board, SubTrees } from "behaviour";
 import { Empire } from "screeps/Empire";
 import { Province } from "screeps/Province";
 import { RoomPlaner } from "screeps/RoomPlaner";
+import { TaskFinder } from "screeps/TaskFinder";
 import { ErrorMapper } from "utils/ErrorMapper";
 // import { RoomPlan } from "utils/RoomPlan";
 
@@ -21,6 +22,7 @@ const firstRoom = Game.spawns.Spawn1.room;
 Empire.Initialize();
 Province.Initialize(firstRoom.name, Game.spawns.Spawn1.room.name);
 RoomPlaner.Initialize(firstRoom);
+TaskFinder.Execute(firstRoom.name);
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code

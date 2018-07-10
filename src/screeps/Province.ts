@@ -6,7 +6,7 @@ export class Province {
                 name,
                 roomNames: [capitalName],
                 state: "DEVELOPMENT",
-                taskIds: [],
+                taskIds: {},
                 // tslint:disable-next-line:object-literal-sort-keys
                 capitalRoomName: capitalName
             };
