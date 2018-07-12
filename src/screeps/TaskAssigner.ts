@@ -18,7 +18,7 @@ export class TaskAssigner {
     public static AssignIdleCreepTask(taskId: string, sourceId: string, taskType: string) {
         const task = Memory.tasks[taskId];
         while (true) {
-            if (task.curWorkPoint >= task.TargetWorkPoint) {
+            if (task.curWorkPoint >= task.targetWorkPoint) {
                 return;
             }
             const idleCreeps: Creep[] = [];
@@ -46,10 +46,10 @@ export class TaskAssigner {
 
     public static AssignSpawnTask(capitaolRoomId: string, taskId: string, sourceId: string, taskType: string) {
         const task = Memory.tasks[taskId];
-        if (task.curWorkPoint >= task.TargetWorkPoint) {
+        if (task.curWorkPoint >= task.targetWorkPoint) {
             return;
         }
-        if (task && task.curWorkPoint < task.TargetWorkPoint) {
+        if (task && task.curWorkPoint < task.targetWorkPoint) {
             const room = Game.rooms[capitaolRoomId];
             // room.memory.spawning[]
             const idleSpawns = room.find(FIND_MY_SPAWNS, { filter: (s) => {

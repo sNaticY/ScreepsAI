@@ -1,6 +1,7 @@
 import { RoomMapUtils } from "utils/RoomMapUtils";
 import { RoomPlanUtils } from "utils/RoomPlanUtils";
 import { Province } from "./Province";
+import { RoomPlanString, RoomStateString } from "./TypeDefs";
 
 export class RoomPlaner {
     public static Initialize(room: Room) {
@@ -30,7 +31,7 @@ export class RoomPlaner {
         const curSpawnTick = 0;
         const roomPlanDirty = true;
         const roomTaskDirty = true;
-        const state: RoomState = "CORE";
+        const state: RoomState = RoomStateString.Core;
         const spawning = {};
 
         room.memory = {
@@ -59,25 +60,25 @@ export class RoomPlaner {
 
         // calc province name & room plan
         let provinceName = "";
-        let roomPlan: RoomPlan = "UNMANAGED";
+        let roomPlan: RoomPlan = RoomPlanString.Unmanaged;
 
         const sourceCount = room.find(FIND_SOURCES).length;
         if (routeLength <= 1) {
             provinceName = minCapitalName;
             if (room.name === minCapitalName) {
-                roomPlan = "MAJOR";
+                roomPlan = RoomPlanString.Major;
             } else if (sourceCount >= 2) {
-                roomPlan = "MINOR";
+                roomPlan = RoomPlanString.Minor;
             } else {
-                roomPlan = "JONIOR";
+                roomPlan = RoomPlanString.Junior;
             }
         } else if (routeLength > 2) {
             if ( sourceCount >= 2) {
                 provinceName = room.name;
-                roomPlan = "MAJOR";
+                roomPlan = RoomPlanString.Major;
             } else {
                 provinceName = "Unmanaged";
-                roomPlan = "UNMANAGED";
+                roomPlan = RoomPlanString.Unmanaged;
             }
         } else {
             provinceName = "Unmanaged";
