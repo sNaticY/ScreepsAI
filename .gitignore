@@ -34,6 +34,11 @@ build/Release
 
 # Dependency directories
 node_modules/
+!node_modules/@types
+node_modules/@types/*
+!node_modules/@types/screeps
+node_modules/@types/screeps/*
+!node_modules/@types/screeps/index.d.ts
 jspm_packages/
 
 # TypeScript v1 declaration files
