@@ -18,18 +18,18 @@ export class TaskAssigner {
     public static AssignIdleCreepTask(taskId: string, sourceId: string, taskType: string) {
         const task = Memory.tasks[taskId];
         while (true) {
-            if (task.CurWorkPoint >= task.TargetWorkPoint) {
+            if (task.curWorkPoint >= task.TargetWorkPoint) {
                 return;
             }
             const idleCreeps: Creep[] = [];
-            const workRoom = Game.rooms[task.WorkPos.roomName];
+            const workRoom = Game.rooms[task.workPos.roomName];
             if (workRoom) {
                 const creeps = workRoom.find(FIND_MY_CREEPS, { filter: (s) => {
                     return s.memory.taskId == null || s.memory.taskId === "";
                 }});
                 idleCreeps.push(...creeps);
             }
-            const homeRoom = Game.rooms[task.HomePos.roomName];
+            const homeRoom = Game.rooms[task.homePos.roomName];
             if (homeRoom) {
                 const creeps = homeRoom.find(FIND_MY_CREEPS, { filter: (s) => {
                     return s.memory.taskId == null || s.memory.taskId === "";
@@ -46,11 +46,11 @@ export class TaskAssigner {
 
     public static AssignSpawnTask(capitaolRoomId: string, taskId: string, sourceId: string, taskType: string) {
         const task = Memory.tasks[taskId];
-        if (task.CurWorkPoint >= task.TargetWorkPoint) {
+        if (task.curWorkPoint >= task.TargetWorkPoint) {
             return;
         }
-        const room = Game.rooms[capitaolRoomId];
-        if (task && task.CurWorkPoint < task.TargetWorkPoint) {
+        if (task && task.curWorkPoint < task.TargetWorkPoint) {
+            const room = Game.rooms[capitaolRoomId];
             // room.memory.spawning[]
             const idleSpawns = room.find(FIND_MY_SPAWNS, { filter: (s) => {
                 return s.spawning == null;

@@ -51,10 +51,10 @@ export class TaskFinder {
         if (Memory.tasks == null) {
             Memory.tasks = {};
         }
-        Memory.tasks[id] = {Id: id, Type: type, WorkSource: workSource,
+        Memory.tasks[id] = {id, type, workSource,
             // tslint:disable-next-line:object-literal-sort-keys
-            HomePos: homePos, WorkPos: workPos, PathLength: pathLength.path.length,
-            TargetWorkPoint: workPoint, CurWorkPoint: curPoint, WorkingCreepIds: []
+            homePos, workPos, pathLength: pathLength.path.length,
+            targetWorkPoint: workPoint, curWorkPoint: curPoint, workingCreepIds: []
         };
 
         return id;

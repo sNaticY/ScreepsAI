@@ -3,14 +3,10 @@ import {Dictionary} from "lodash";
 export class StructureLibrary {
     public StructureLevel: Array<Dictionary<number>> = [
         // Level 0
-        {
-            [STRUCTURE_ROAD]: 0,
-            [STRUCTURE_CONTAINER]: 2
-        },
+        {},
         // Level 1
         {
             [STRUCTURE_ROAD]: 0,
-            [STRUCTURE_CONTAINER]: 2,
             [STRUCTURE_SPAWN]: 1
         },
         // Level 2
