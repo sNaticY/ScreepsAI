@@ -166,8 +166,7 @@ export default class SubTrees {
         );
     }
 
-    private static CheckEnergyCapcityThanAdjustStrategySequence( low: number, high: number,
-                                                                 strategyLevel: number): Tree {
+    private static CheckEnergyCapcityThanAdjustStrategySequence( low: number, high: number, strategyLevel: number): Tree {
         return new Sequence().AddSubTree(
             new CheckEnergyCapcity(low, high),
             new AdjustStrategy(strategyLevel)

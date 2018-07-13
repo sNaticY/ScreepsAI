@@ -21,14 +21,14 @@ export class RoomMapUtils {
             if (pos && RoomMapUtils.CheckIfCubeEmpty(pos, room, 5, null)) {
                 origin1 = pos;
             } else {
-                origin1 = RoomMapUtils.FindEmptyCubeAreaAround(middlePos, room, 5, 2, (p) => {
+                origin1 = RoomMapUtils.FindEmptyCubeAreaAround(middlePos, room, 5, 0, (p) => {
                     return true;
                 });
             }
         }
 
         if (origin1) {
-            console.log(origin1);
+            // console.log(origin1);
             origin2 = RoomMapUtils.FindEmptyCubeAreaAround(anchorPos, room, 3, 2, (p) => {
                 return RoomMapUtils.NotInRange(p, origin1, 5);
             });
@@ -93,7 +93,8 @@ export class RoomMapUtils {
                 for (let j = -1; j <= 1; j++) {
                     const pos = new RoomPosition(stepPos.x + i, stepPos.y + j, stepPos.roomName);
                     // tslint:disable-next-line:max-line-length
-                    if (pos && pos.lookFor(LOOK_TERRAIN)[0] !== "wall" && map[pos.x][pos.y] && map[pos.x][pos.y][targetIndex] === -1) {
+
+                    if (pos && pos.lookFor(LOOK_TERRAIN)[0] !== "wall" && map[pos.x] && map[pos.x][pos.y] && map[pos.x][pos.y][targetIndex] === -1) {
                         nextStep.push(pos);
                         map[pos.x][pos.y][targetIndex] = stepIndex;
                         // console.log("Set", pos, targetIndex, map[pos.x][pos.y][targetIndex]);
@@ -106,7 +107,7 @@ export class RoomMapUtils {
 
     // tslint:disable-next-line:max-line-length
     public static FindEmptyCubeAreaAround(originPos: RoomPosition, room: Room, halfLength: number, minDistance: number, filter: PosFilter|null): RoomPosition | null {
-        for (let range = halfLength + minDistance; range < 40; range++) {
+        for (let range = minDistance; range < 40; range++) {
             for (let i = range * -1; i < range; i++) {
                 const pos1 = room.getPositionAt(originPos.x + i, originPos.y - range);
                 if (pos1 && RoomMapUtils.CheckIfCubeEmpty(pos1, room, halfLength, filter)) { return pos1; }
@@ -126,23 +127,23 @@ export class RoomMapUtils {
         for (let range = halfLength; range >= 0; range--) {
             for (let i = range * -1; i < range; i++) {
                 const pos1 = room.getPositionAt(originPos.x + i, originPos.y - range);
-                if (!pos1 || pos1.lookFor("terrain")[0] === "wall" || (filter == null || !filter(pos1))) {
-                    console.log(pos1, "not empty");
+                if (!pos1 || pos1.lookFor("terrain")[0] === "wall" || (filter != null && !filter(pos1))) {
+                    // console.log(pos1, "not empty");
                     return false;
                 }
                 const pos2 = room.getPositionAt(originPos.x + i, originPos.y + range);
-                if (!pos2 || pos2.lookFor("terrain")[0] === "wall" || (filter == null || !filter(pos2))) {
-                    console.log(pos2, "not empty");
+                if (!pos2 || pos2.lookFor("terrain")[0] === "wall" || (filter != null && !filter(pos2))) {
+                    // console.log(pos2, "not empty");
                     return false;
                 }
                 const pos3 = room.getPositionAt(originPos.x - range, originPos.y + i);
-                if (!pos3 || pos3.lookFor("terrain")[0] === "wall" || (filter == null || !filter(pos3))) {
-                    console.log(pos3, "not empty");
+                if (!pos3 || pos3.lookFor("terrain")[0] === "wall" || (filter != null && !filter(pos3))) {
+                    // console.log(pos3, "not empty");
                     return false;
                 }
                 const pos4 = room.getPositionAt(originPos.x + range, originPos.y + i);
-                if (!pos4 || pos4.lookFor("terrain")[0] === "wall" || (filter == null || !filter(pos4))) {
-                    console.log(pos4, "not empty");
+                if (!pos4 || pos4.lookFor("terrain")[0] === "wall" || (filter != null && !filter(pos4))) {
+                    // console.log(pos4, "not empty");
                     return false;
                 }
             }

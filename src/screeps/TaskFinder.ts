@@ -1,23 +1,53 @@
-export class TaskFinder {
-    public static Execute(provinceName: string) {
-        const province = Memory.provinces[provinceName];
-        if (province == null) {return; }
-        const roomNames = province.roomNames;
-        for (const roomName of roomNames) {
-            const room = Game.rooms[roomName];
-            if (room && room.memory.roomPlanDirty) {
-                const controller = room.controller;
-                if (controller) {
-                    TaskFinder.CheckRoomTask(provinceName, room, controller.level);
-                }
+import { Dictionary } from "lodash";
+import { RoomPlaner } from "./RoomPlaner";
+import { TaskChangeAction, TaskChangeFunc } from "./TypeDefs";
 
-                room.memory.roomPlanDirty = false;
-                room.memory.roomTaskDirty = true;
+export class TaskFinder {
+    // Key = provinceName;
+    private static TaskChangeFuncs: Dictionary<TaskChangeAction[]> = {};
+
+    public static AddTaskChangeListener(provinceName: string, obj: any, func: TaskChangeFunc) {
+        if (TaskFinder.TaskChangeFuncs[provinceName] == null) {
+            TaskFinder.TaskChangeFuncs[provinceName] = [];
+        }
+        TaskFinder.TaskChangeFuncs[provinceName].push({obj, func});
+    }
+
+    public static RemoveTaskChangeListener(provinceName: string, obj: any, func: TaskChangeFunc) {
+        if (TaskFinder.TaskChangeFuncs[provinceName] != null) {
+            const index = TaskFinder.TaskChangeFuncs[provinceName].indexOf({obj, func}, 0);
+            if (index > -1) {
+                TaskFinder.TaskChangeFuncs[provinceName].splice(index, 1);
+            }
+        }
+    }
+
+    public static InitNewRoom(roomName: string) {
+        RoomPlaner.AddRoomPlanListener(roomName, this, this.OnRoomPlanChanged);
+    }
+
+    public static OnRoomPlanChanged(roomName: string) {
+        console.log("OnRoomPlanChanged ", roomName);
+        const room = Game.rooms[roomName];
+        if (!room) {
+            return;
+        }
+        const controller = room.controller;
+        if (!controller) {
+            return;
+        }
+
+        TaskFinder.CheckRoomTask(room.memory.provinceName, room, controller.level);
+        const provinceTaskChangeFuncs = TaskFinder.TaskChangeFuncs[room.memory.provinceName];
+        if (provinceTaskChangeFuncs) {
+            for (const func of provinceTaskChangeFuncs) {
+                func.func.call(func.obj, room.memory.provinceName);
             }
         }
     }
 
     public static CheckRoomTask(provinceName: string, room: Room, level: number) {
+        console.log("CheckRoomTask");
         TaskFinder.CheckHarvestTask(provinceName, room);
     }
 
@@ -25,13 +55,18 @@ export class TaskFinder {
         const sources = room.find(FIND_SOURCES);
         const province = Memory.provinces[provinceName];
         for (const source of sources) {
-            if (province.taskIds[source.id] == null) {
-                province.taskIds[source.id] = {};
+            if (province.taskIds[room.name] == null) {
+                province.taskIds[room.name] = {};
+            }
+            const roomTasks = province.taskIds[room.name];
+            if (roomTasks[source.id] == null) {
+                roomTasks[source.id] = {};
             }
 
-            const sourceTasks = province.taskIds[source.id];
+            const sourceTasks = roomTasks[source.id];
             const type: TaskType = "TASK_HARVEST";
             if (sourceTasks[type] == null) {
+                console.log("NewHarvestTask");
                 sourceTasks[type] = TaskFinder.NewHarvestTask(source, provinceName);
             }
         }
@@ -47,6 +82,7 @@ export class TaskFinder {
         const pathLength = PathFinder.search(homePos, {pos: workPos, range: 1}, {plainCost: 1, swampCost: 1});
         const workPoint = source.energyCapacity / 300;
         const curPoint = 0;
+        const planPoint = 0;
 
         if (Memory.tasks == null) {
             Memory.tasks = {};
@@ -54,7 +90,7 @@ export class TaskFinder {
         Memory.tasks[id] = {id, type, workSource,
             // tslint:disable-next-line:object-literal-sort-keys
             homePos, workPos, pathLength: pathLength.path.length,
-            targetWorkPoint: workPoint, curWorkPoint: curPoint, workingCreepIds: []
+            targetWorkPoint: workPoint, planWorkPoint: planPoint, curWorkPoint: curPoint, workingCreepIds: []
         };
 
         return id;

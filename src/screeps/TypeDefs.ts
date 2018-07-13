@@ -2,6 +2,19 @@ export type PosFilter = (pos: RoomPosition) => boolean;
 export type CubePosFilter = (pos: RoomPosition, i: number) => boolean;
 export type RhumbusPosFilter = (pos: RoomPosition, i: number, j: number) => boolean;
 
+export type RoomPlanFunc = (roomName: string) => void;
+export type TaskChangeFunc = (provinceName: string) => void;
+
+export interface RoomPlanAction {
+    obj: any;
+    func: RoomPlanFunc;
+}
+
+export interface TaskChangeAction {
+    obj: any;
+    func: TaskChangeFunc;
+}
+
 export interface CreepPrototype {
     taskType: TaskType;
     econemyLevel: number;
@@ -24,6 +37,7 @@ export class TaskTypeString {
 export class RoleTypeString {
     public static Harvester: ROLE_HARVESTER = "ROLE_HARVESTER";
     public static Carrier: ROLE_CARRIER = "ROLE_CARRIER";
+    public static Builder: ROLE_BUILDER = "ROLE_BUILDER";
     public static Upgrader: ROLE_UPGRADER = "ROLE_UPGRADER";
 }
 

@@ -9,7 +9,7 @@ export class AdjustStrategy extends Tree {
         this.level = level;
     }
     public Execute(name: string, id: string): Status {
-        Board.EnconemyLevel = this.level;
+        Board.CurrentRoom.memory.econemyLevel = this.level;
         // console.log("SetLevel = ", Board.EnconemyLevel, "Current Energy = ", Board.CurrentRoom.energyAvailable)
         switch (Board.EnconemyLevel) {
             case 1:

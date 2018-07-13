@@ -1,9 +1,29 @@
+import { Dictionary } from "lodash";
 import { RoomMapUtils } from "utils/RoomMapUtils";
 import { RoomPlanUtils } from "utils/RoomPlanUtils";
 import { Province } from "./Province";
-import { RoomPlanString, RoomStateString } from "./TypeDefs";
+import { RoomPlanAction, RoomPlanFunc, RoomPlanString, RoomStateString } from "./TypeDefs";
 
 export class RoomPlaner {
+    // Key = RoomName;
+    public static RoomPlanFuncs: Dictionary<RoomPlanAction[]> = {};
+
+    public static AddRoomPlanListener(RoomName: string, obj: any, func: RoomPlanFunc) {
+        if (RoomPlaner.RoomPlanFuncs[RoomName] == null) {
+            RoomPlaner.RoomPlanFuncs[RoomName] = [];
+        }
+        RoomPlaner.RoomPlanFuncs[RoomName].push({obj, func});
+    }
+
+    public static RemoveRoomPlanListener(RoomName: string, obj: any, func: RoomPlanFunc) {
+        if (RoomPlaner.RoomPlanFuncs[RoomName] != null) {
+            const index = RoomPlaner.RoomPlanFuncs[RoomName].indexOf({obj, func}, 0);
+            if (index > -1) {
+                RoomPlaner.RoomPlanFuncs[RoomName].splice(index, 1);
+            }
+        }
+    }
+
     public static Initialize(room: Room) {
         const provinceAndPlan = RoomPlaner.CalcRoomProvinceNameAndRoomPlan(room);
 
@@ -33,14 +53,23 @@ export class RoomPlaner {
         const roomTaskDirty = true;
         const state: RoomState = RoomStateString.Core;
         const spawning = {};
+        const econemyLevel = 0;
 
         room.memory = {
             // tslint:disable-next-line:object-literal-sort-keys
             provinceName, plan, middlePos,
             origin1Pos: origin1,
             origin2Pos: origin2,
-            curSpawnTick, roomPlanDirty, roomTaskDirty, structurePlan, state, spawning
+            curSpawnTick, structurePlan, state, spawning, econemyLevel
         };
+
+        const funcs = RoomPlaner.RoomPlanFuncs[room.name];
+        if (funcs) {
+            for (const func of funcs) {
+                console.log("Call func", room.name);
+                func.func.call(func.obj, room.name);
+            }
+        }
     }
 
     private static CalcRoomProvinceNameAndRoomPlan(room: Room): {provinceName: string, roomPlan: RoomPlan} {

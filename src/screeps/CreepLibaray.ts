@@ -20,7 +20,7 @@ export class CreepLibaray {
                 body: [
                     CARRY, CARRY, MOVE, MOVE
                 ],
-                role: RoleTypeString.Harvester
+                role: RoleTypeString.Carrier
             }
         ],
         [TaskTypeString.Build]: [
@@ -30,7 +30,7 @@ export class CreepLibaray {
                 body: [
                     WORK, CARRY, MOVE, MOVE
                 ],
-                role: RoleTypeString.Harvester
+                role: RoleTypeString.Builder
             }
         ],
         [TaskTypeString.Upgrade]: [
@@ -40,7 +40,7 @@ export class CreepLibaray {
                 body: [
                     WORK, CARRY, MOVE, MOVE
                 ],
-                role: RoleTypeString.Harvester
+                role: RoleTypeString.Upgrader
             }
         ]
     };
