@@ -10,7 +10,7 @@ export class MoveAndHarvest extends Tree {
         const creep = Board.CurrentCreep;
 
         // if creep energy is full
-        if ((creep.memory.role !== "ROLE_HARVESTER" && creep.carry.energy >= creep.carryCapacity)) {
+        if ((creep.memory.role !== "HARVESTER" && creep.carry.energy >= creep.carryCapacity)) {
             return this.ReturnState(Status.Failure, id);
         }
 
@@ -30,7 +30,7 @@ export class MoveAndHarvest extends Tree {
         }
 
         // move harvester near target or container
-        if (creep.memory.role === "ROLE_HARVESTER") {
+        if (creep.memory.role === "HARVESTER") {
             const container = target.pos.findInRange<Structure>(FIND_STRUCTURES, 1,
                 { filter: (s) => s.structureType === STRUCTURE_CONTAINER }
             );

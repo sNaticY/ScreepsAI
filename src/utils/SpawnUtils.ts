@@ -3,7 +3,7 @@ import { CreepLibaray } from "screeps/CreepLibaray";
 export class SpawnUtils {
     public static SpawnCreep(plan: SpawnPlan, spawn: StructureSpawn): ScreepsReturnCode {
         const prototype = CreepLibaray.Prototypes[plan.taskType][plan.level];
-        const result = spawn.spawnCreep(prototype.body, prototype.role + Game.time, { memory: {
+        const result = spawn.spawnCreep(prototype.body, prototype.role + "_" + Game.time.toString(36), { memory: {
             level: prototype.level,
             role: prototype.role,
             taskId: plan.taskId,

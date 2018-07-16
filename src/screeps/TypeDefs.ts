@@ -35,10 +35,10 @@ export class TaskTypeString {
 
 // tslint:disable-next-line:max-classes-per-file
 export class RoleTypeString {
-    public static Harvester: ROLE_HARVESTER = "ROLE_HARVESTER";
-    public static Carrier: ROLE_CARRIER = "ROLE_CARRIER";
-    public static Builder: ROLE_BUILDER = "ROLE_BUILDER";
-    public static Upgrader: ROLE_UPGRADER = "ROLE_UPGRADER";
+    public static Harvester: ROLE_HARVESTER = "HARVESTER";
+    public static Carrier: ROLE_CARRIER = "CARRIER";
+    public static Builder: ROLE_BUILDER = "BUILDER";
+    public static Upgrader: ROLE_UPGRADER = "UPGRADER";
 }
 
 // tslint:disable-next-line:max-classes-per-file

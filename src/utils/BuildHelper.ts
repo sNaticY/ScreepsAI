@@ -155,7 +155,7 @@ export class BuildHelper {
         } else {
             minerIndex = random(0, 1);
         }
-        return { level, role: "ROLE_BUILDER", taskId: "", taskType: "TASK_BUILD", workPoint: 1  };
+        return { level, role: "BUILDER", taskId: "", taskType: "TASK_BUILD", workPoint: 1  };
     }
 
     public static BuildOneStructureNearPos(originPos: RoomPosition, range: number,
