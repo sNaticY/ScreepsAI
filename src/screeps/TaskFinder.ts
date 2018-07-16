@@ -1,23 +1,23 @@
 import { Dictionary } from "lodash";
 import { RoomPlaner } from "./RoomPlaner";
-import { TaskChangeAction, TaskChangeFunc } from "./TypeDefs";
+import { RoomPlanString, TaskChangeAction, TaskChangeFunc } from "./TypeDefs";
 
 export class TaskFinder {
     // Key = provinceName;
     private static TaskChangeFuncs: Dictionary<TaskChangeAction[]> = {};
 
     public static AddTaskChangeListener(provinceName: string, obj: any, func: TaskChangeFunc) {
-        if (TaskFinder.TaskChangeFuncs[provinceName] == null) {
-            TaskFinder.TaskChangeFuncs[provinceName] = [];
+        if (this.TaskChangeFuncs[provinceName] == null) {
+            this.TaskChangeFuncs[provinceName] = [];
         }
-        TaskFinder.TaskChangeFuncs[provinceName].push({obj, func});
+        this.TaskChangeFuncs[provinceName].push({obj, func});
     }
 
     public static RemoveTaskChangeListener(provinceName: string, obj: any, func: TaskChangeFunc) {
-        if (TaskFinder.TaskChangeFuncs[provinceName] != null) {
-            const index = TaskFinder.TaskChangeFuncs[provinceName].indexOf({obj, func}, 0);
+        if (this.TaskChangeFuncs[provinceName] != null) {
+            const index = this.TaskChangeFuncs[provinceName].indexOf({obj, func}, 0);
             if (index > -1) {
-                TaskFinder.TaskChangeFuncs[provinceName].splice(index, 1);
+                this.TaskChangeFuncs[provinceName].splice(index, 1);
             }
         }
     }
@@ -37,8 +37,8 @@ export class TaskFinder {
             return;
         }
 
-        TaskFinder.CheckRoomTask(room.memory.provinceName, room, controller.level);
-        const provinceTaskChangeFuncs = TaskFinder.TaskChangeFuncs[room.memory.provinceName];
+        this.CheckRoomTask(room.memory.provinceName, room, controller.level);
+        const provinceTaskChangeFuncs = this.TaskChangeFuncs[room.memory.provinceName];
         if (provinceTaskChangeFuncs) {
             for (const func of provinceTaskChangeFuncs) {
                 func.func.call(func.obj, room.memory.provinceName);
@@ -48,16 +48,62 @@ export class TaskFinder {
 
     public static CheckRoomTask(provinceName: string, room: Room, level: number) {
         console.log("CheckRoomTask");
-        TaskFinder.CheckHarvestTask(provinceName, room);
+        const province = Memory.provinces[provinceName];
+        if (province.taskIds[room.name] == null) {
+            province.taskIds[room.name] = {};
+        }
+        this.CheckHarvestTask(provinceName, room);
+        this.CheckBootstrapTask(provinceName, room);
+    }
+
+    public static CheckBootstrapTask(provinceName: string, room: Room) {
+        const province = Memory.provinces[provinceName];
+        if (room.memory.plan === RoomPlanString.Major) {
+            const roomTasks = province.taskIds[room.name];
+            const spawns = room.find(FIND_MY_SPAWNS);
+            if (spawns.length > 0) {
+                if (roomTasks[spawns[0].id] == null) {
+                    roomTasks[spawns[0].id] = {};
+                }
+                const bootstrapTasks = roomTasks[spawns[0].id];
+                const type: TaskType = "TASK_BOOTSTRAP";
+                if (bootstrapTasks[type] == null) {
+                    console.log("NewHarvestTask");
+                    bootstrapTasks[type] = this.NewBootstrapTask(spawns[0], provinceName);
+                }
+            }
+        }
+    }
+
+    private static NewBootstrapTask(spawn: StructureSpawn, provinceName: string): string {
+        const type: TaskType = "TASK_BOOTSTRAP";
+        const id = spawn.id + type;
+        const workSource = spawn.id;
+        const capitalName = Memory.provinces[provinceName].capitalRoomName;
+        const homePos = Game.rooms[capitalName].memory.origin1Pos;
+        const workPos = spawn.pos;
+        const pathLength = 0;
+        const workPoint = 3;
+        const curPoint = 0;
+        const planPoint = 0;
+
+        if (Memory.tasks == null) {
+            Memory.tasks = {};
+        }
+        Memory.tasks[id] = {id, type, workSource,
+            // tslint:disable-next-line:object-literal-sort-keys
+            homePos, workPos, pathLength: 0,
+            targetWorkPoint: workPoint, planWorkPoint: planPoint, curWorkPoint: curPoint, workingCreepIds: []
+        };
+
+        return id;
     }
 
     public static CheckHarvestTask(provinceName: string, room: Room) {
         const sources = room.find(FIND_SOURCES);
         const province = Memory.provinces[provinceName];
+
         for (const source of sources) {
-            if (province.taskIds[room.name] == null) {
-                province.taskIds[room.name] = {};
-            }
             const roomTasks = province.taskIds[room.name];
             if (roomTasks[source.id] == null) {
                 roomTasks[source.id] = {};
@@ -67,7 +113,7 @@ export class TaskFinder {
             const type: TaskType = "TASK_HARVEST";
             if (sourceTasks[type] == null) {
                 console.log("NewHarvestTask");
-                sourceTasks[type] = TaskFinder.NewHarvestTask(source, provinceName);
+                sourceTasks[type] = this.NewHarvestTask(source, provinceName);
             }
         }
     }

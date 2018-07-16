@@ -25,6 +25,7 @@ export interface CreepPrototype {
 }
 
 export class TaskTypeString {
+    public static BootStrap: TASK_BOOTSTRAP = "TASK_BOOTSTRAP";
     public static Harvest: TASK_HARVEST = "TASK_HARVEST";
     public static Carry: TASK_CARRY = "TASK_CARRY";
     public static Upgrade: TASK_UPGRADE = "TASK_UPGRADE";
@@ -35,6 +36,7 @@ export class TaskTypeString {
 
 // tslint:disable-next-line:max-classes-per-file
 export class RoleTypeString {
+    public static Bootstraper: ROLE_BOOTSTRAPER = "BOOTSTRAPER";
     public static Harvester: ROLE_HARVESTER = "HARVESTER";
     public static Carrier: ROLE_CARRIER = "CARRIER";
     public static Builder: ROLE_BUILDER = "BUILDER";
