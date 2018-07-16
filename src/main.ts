@@ -3,6 +3,7 @@ import { Board, SubTrees } from "behaviour";
 import { Empire } from "screeps/Empire";
 import { Province } from "screeps/Province";
 import { RoomPlaner } from "screeps/RoomPlaner";
+import { SpawnManager } from "screeps/SpawnManager";
 import { TaskAssigner } from "screeps/TaskAssigner";
 import { TaskFinder } from "screeps/TaskFinder";
 import { ErrorMapper } from "utils/ErrorMapper";
@@ -61,6 +62,12 @@ if (room && room.controller && room.controller.level === 1 ) { // RCL one on a s
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 export const loop = ErrorMapper.wrapLoop(() => {
 
+    for (const name in Game.spawns) {
+        if (Game.spawns.hasOwnProperty(name)) {
+            const spawn = Game.spawns[name];
+            SpawnManager.Execute(spawn);
+        }
+    }
     // console.log("-------------------------");
     // if (!isFindFlag) {
     //     const curRoom = Game.spawns.Spawn1.room;

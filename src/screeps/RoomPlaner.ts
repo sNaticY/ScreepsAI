@@ -63,13 +63,7 @@ export class RoomPlaner {
             curSpawnTick, structurePlan, state, spawning, econemyLevel
         };
 
-        const funcs = RoomPlaner.RoomPlanFuncs[room.name];
-        if (funcs) {
-            for (const func of funcs) {
-                console.log("Call func", room.name);
-                func.func.call(func.obj, room.name);
-            }
-        }
+        RoomPlaner.TriggerRoomPlans(room.name);
     }
 
     private static CalcRoomProvinceNameAndRoomPlan(room: Room): {provinceName: string, roomPlan: RoomPlan} {
@@ -113,5 +107,14 @@ export class RoomPlaner {
             provinceName = "Unmanaged";
         }
         return {provinceName, roomPlan};
+    }
+
+    public static TriggerRoomPlans(roomName: string) {
+        const funcs = RoomPlaner.RoomPlanFuncs[roomName];
+        if (funcs) {
+            for (const func of funcs) {
+                func.func.call(func.obj, roomName);
+            }
+        }
     }
 }
