@@ -1,1 +1,0 @@
-type Condition = () => boolean;
