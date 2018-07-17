@@ -14,14 +14,11 @@ export class MoveAndHarvest extends Tree {
             return this.ReturnState(Status.Failure, id);
         }
 
-        const targets = creep.room.find(FIND_SOURCES);
-
-        // if can not find energy
-        if (targets.length === 0) {
+        const task = Memory.tasks[creep.memory.taskId];
+        if (task == null || task.workPos == null) {
             return this.ReturnState(Status.Failure, id);
         }
-
-        const target = targets[1];
+        const target = task.workPos.findClosestByRange(FIND_SOURCES);
         const result = creep.harvest(target);
 
         // if not succeess and not because range

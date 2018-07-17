@@ -52,8 +52,8 @@ export class TaskFinder {
         if (province.taskIds[room.name] == null) {
             province.taskIds[room.name] = {};
         }
-        this.CheckHarvestTask(provinceName, room);
         this.CheckBootstrapTask(provinceName, room);
+        this.CheckHarvestTask(provinceName, room);
     }
 
     public static CheckBootstrapTask(provinceName: string, room: Room) {

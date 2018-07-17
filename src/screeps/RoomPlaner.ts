@@ -49,8 +49,6 @@ export class RoomPlaner {
             [STRUCTURE_STORAGE]: RoomPlanUtils.FindStoragePositions(origin2, room)
         }; // RoomPlaner.CalcStructurePlan(room);
         const curSpawnTick = 0;
-        const roomPlanDirty = true;
-        const roomTaskDirty = true;
         const state: RoomState = RoomStateString.Core;
         const spawning = {};
         const econemyLevel = 0;
