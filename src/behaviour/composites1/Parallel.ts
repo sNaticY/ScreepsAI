@@ -1,6 +1,6 @@
 
 import { Dictionary } from "lodash";
-import Status from "../Status";
+import { Status } from "../Status";
 import Tree from "../Tree";
 
 export default class Parallel extends Tree {
@@ -13,7 +13,7 @@ export default class Parallel extends Tree {
 
     constructor(succeed: number, failure: number, canbreak: boolean, defaultValue: boolean) {
         super();
-        this.SubTrees = [];
+        this.subTrees = [];
         this.succeed = succeed;
         this.failure = failure;
         this.canbreak = canbreak;
@@ -23,12 +23,12 @@ export default class Parallel extends Tree {
         this.failureNum = {};
     }
 
-    public Execute(name: string, id: string): Status {
-        if (this.State[id] === Status.Running) {
+    public execute(name: string, id: string): Status {
+        if (this.state[id] === Status.Running) {
             let hasRunning = false;
-            for (const tree of this.SubTrees) {
-                if (tree.State[id] === Status.Running) {
-                    const result = tree.Execute(name + "parallel-", id);
+            for (const tree of this.subTrees) {
+                if (tree.state[id] === Status.Running) {
+                    const result = tree.execute(name + "parallel-", id);
                     if (result === Status.Succeed) {
                         this.succeedNum[id]++;
                     } else if (result === Status.Failure) {
@@ -41,37 +41,37 @@ export default class Parallel extends Tree {
                         if (this.succeedNum[id] >= this.succeed) {
                             this.succeedNum[id] = 0;
                             this.failureNum[id] = 0;
-                            return this.ReturnState(Status.Succeed, id);
+                            return this.returnState(Status.Succeed, id);
                         }
                         if (this.failureNum[id] >= this.failure) {
                             this.succeedNum[id] = 0;
                             this.failureNum[id] = 0;
-                            return this.ReturnState(Status.Failure, id);
+                            return this.returnState(Status.Failure, id);
                         }
                     }
                 }
             }
             if (hasRunning) {
-                return this.ReturnState(Status.Running, id);
+                return this.returnState(Status.Running, id);
             } else {
                 if (this.succeedNum[id] >= this.succeed) {
                     this.succeedNum[id] = 0;
                     this.failureNum[id] = 0;
-                    return this.ReturnState(Status.Succeed, id);
+                    return this.returnState(Status.Succeed, id);
                 } else if (this.failureNum[id] >= this.failure) {
                     this.succeedNum[id] = 0;
                     this.failureNum[id] = 0;
-                    return this.ReturnState(Status.Failure, id);
+                    return this.returnState(Status.Failure, id);
                 } else {
                     this.succeedNum[id] = 0;
                     this.failureNum[id] = 0;
-                    return this.ReturnState(this.default, id);
+                    return this.returnStateBoolean(this.default, id);
                 }
             }
         } else {
             let hasRunning = false;
-            for (const tree of this.SubTrees) {
-                const result = tree.Execute(name + "parallel-", id);
+            for (const tree of this.subTrees) {
+                const result = tree.execute(name + "parallel-", id);
                 if (result === Status.Succeed) {
                     this.succeedNum[id]++;
                 } else if (result === Status.Failure) {
@@ -84,30 +84,30 @@ export default class Parallel extends Tree {
                     if (this.succeedNum[id] >= this.succeed) {
                         this.succeedNum[id] = 0;
                         this.failureNum[id] = 0;
-                        return this.ReturnState(Status.Succeed, id);
+                        return this.returnState(Status.Succeed, id);
                     }
                     if (this.failureNum[id] >= this.failure) {
                         this.succeedNum[id] = 0;
                         this.failureNum[id] = 0;
-                        return this.ReturnState(Status.Failure, id);
+                        return this.returnState(Status.Failure, id);
                     }
                 }
             }
             if (hasRunning) {
-                return this.ReturnState(Status.Running, id);
+                return this.returnState(Status.Running, id);
             } else {
                 if (this.succeedNum[id] >= this.succeed) {
                     this.succeedNum[id] = 0;
                     this.failureNum[id] = 0;
-                    return this.ReturnState(Status.Succeed, id);
+                    return this.returnState(Status.Succeed, id);
                 } else if (this.failureNum[id] >= this.failure) {
                     this.succeedNum[id] = 0;
                     this.failureNum[id] = 0;
-                    return this.ReturnState(Status.Failure, id);
+                    return this.returnState(Status.Failure, id);
                 } else {
                     this.succeedNum[id] = 0;
                     this.failureNum[id] = 0;
-                    return this.ReturnState(this.default, id);
+                    return this.returnStateBoolean(this.default, id);
                 }
             }
         }

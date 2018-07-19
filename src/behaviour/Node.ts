@@ -1,5 +1,5 @@
-import Status from "./Status";
+import { Status } from "./Status";
 
 export default interface TreeNode {
-    Execute(name: string, id: string): Status;
+    execute(name: string, id: string): Status;
 }

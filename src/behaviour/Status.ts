@@ -1,6 +1,6 @@
-export default class Status {
-    public static Succeed: string = "Succeed";
-    public static Failure: string = "Failure";
-    public static Running: string = "Running";
-    public static None: string = "None";
+export enum Status {
+    Succeed = "Succeed",
+    Failure = "Failure",
+    Running = "Running",
+    None = "None"
 }

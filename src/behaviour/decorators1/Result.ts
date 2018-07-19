@@ -1,4 +1,4 @@
-import Status from "../Status";
+import { Status } from "../Status";
 import Tree from "../Tree";
 
 export class Result extends Tree {
@@ -9,13 +9,13 @@ export class Result extends Tree {
         this.result = result;
         this.tree = tree;
     }
-    public Execute(name: string, id: string): Status {
+    public execute(name: string, id: string): Status {
         if (this.tree) {
-            const res = this.tree.Execute(name + "Result-", id);
+            const res = this.tree.execute(name + "Result-", id);
             if (res === Status.Running) {
-                return this.ReturnState(Status.Running, id);
+                return this.returnState(Status.Running, id);
             }
         }
-        return this.result ? this.ReturnState(Status.Succeed, id) : this.ReturnState(Status.Failure, id);
+        return this.result ? this.returnState(Status.Succeed, id) : this.returnState(Status.Failure, id);
     }
 }

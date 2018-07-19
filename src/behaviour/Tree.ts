@@ -1,44 +1,44 @@
 import { Dictionary } from "lodash";
 import TreeNode from "./Node";
-import Status from "./Status";
+import { Status } from "./Status";
 
 // ...
 export default abstract class Tree implements TreeNode {
 
-    protected SubTrees: Tree[];
+    protected subTrees: Tree[];
 
-    public State: Dictionary<Status>;
+    public state: Dictionary<Status>;
 
     constructor() {
-        this.SubTrees = [];
-        this.State = {};
+        this.subTrees = [];
+        this.state = {};
     }
 
-    public abstract Execute(name: string, id: string): Status;
+    public abstract execute(name: string, id: string): Status;
 
-    public AddSubTree(...subtrees: Tree[]): Tree {
-        this.SubTrees.push(...subtrees);
+    public addSubTree(...subtrees: Tree[]): Tree {
+        this.subTrees.push(...subtrees);
         return this;
     }
 
-    protected ReturnState(state: Status, id: string): Status {
-        this.State[id] = state;
+    protected returnState(state: Status, id: string): Status {
+        this.state[id] = state;
         return state;
     }
 
-    protected ReturnStateBoolean(state: boolean, id: string): Status {
+    protected returnStateBoolean(state: boolean, id: string): Status {
         const result = state ? Status.Succeed : Status.Failure;
-        this.State[id] = result;
+        this.state[id] = result;
         return result;
     }
 
-    public ClearStates() {
+    public clearStates() {
         const newStates: Dictionary<Status> = {};
-        for (const index in this.State) {
-            if (this.State.hasOwnProperty(index) && this.State[index] === Status.Running) {
+        for (const index in this.state) {
+            if (this.state.hasOwnProperty(index) && this.state[index] === Status.Running) {
                 newStates[index] = Status.Running;
             }
         }
-        this.State = newStates;
+        this.state = newStates;
     }
 }
