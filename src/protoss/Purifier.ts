@@ -15,7 +15,10 @@ export class Purifier {
         // Load existed sectors
         for (const sectorId of Memory.purifier.sectorIds) {
             const sector = Memory.sectors[sectorId];
-            this.sectors[sector.name] = new Sector(undefined, sector);
+            if (!Game.rooms[sectorId]) {
+                continue;
+            }
+            this.sectors[sector.name] = new Sector(Game.rooms[sectorId], sector);
         }
 
         // Load All Known Rooms.
@@ -48,7 +51,7 @@ export class Purifier {
             this.sectors[room.name] = new Sector(room, undefined);
         } else {
             if (routeLength <= 1) {
-                this.sectors[minCapitalName].addNewRoom(room);
+                this.sectors[minCapitalName].addSubRoom(room);
             } else {
                 const sourceCount = room.find(FIND_SOURCES).length;
                 if (sourceCount >= 2 && room.controller) {
@@ -62,7 +65,7 @@ export class Purifier {
         for (const key in Memory.sectors) {
             if (Memory.sectors.hasOwnProperty(key)) {
                 const sector = Memory.sectors[key];
-                for (const roomName of sector.roomNames) {
+                for (const roomName of sector.subRoomIds) {
                     if (roomName === roomId) {
                         return sector.name;
                     }
@@ -91,7 +94,7 @@ export class Purifier {
         Memory.spawns = {};
         Memory.rooms = {};
         Memory.purifier = {
-            unmanaged: {},
+            managedRoomIds: [],
             sectorIds: []
         };
     }
